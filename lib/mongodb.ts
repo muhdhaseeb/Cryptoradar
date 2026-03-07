@@ -12,22 +12,31 @@ interface MongooseCache {
 }
 
 declare global {
-  var mongoose: MongooseCache | undefined;
+  var mongooseCache: MongooseCache | undefined;
 }
 
-let cached = global.mongoose;
+let cached = global.mongooseCache;
 
 if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+  cached = global.mongooseCache = { conn: null, promise: null };
 }
 
 export async function connectToDatabase() {
   if (cached!.conn) return cached!.conn;
 
   if (!cached!.promise) {
-    cached!.promise = mongoose.connect(MONGODB_URI);
+    cached!.promise = mongoose.connect(MONGODB_URI).catch((err) => {
+      cached!.promise = null;
+      throw err;
+    });
   }
 
-  cached!.conn = await cached!.promise;
+  try {
+    cached!.conn = await cached!.promise;
+  } catch (err) {
+    cached!.promise = null;
+    throw err;
+  }
+
   return cached!.conn;
 }

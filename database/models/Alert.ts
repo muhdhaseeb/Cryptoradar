@@ -21,7 +21,14 @@ const AlertSchema = new Schema<IAlert>(
     coinId: { type: String, required: true },
     coinName: { type: String, required: true },
     coinSymbol: { type: String, required: true },
-    targetPrice: { type: Number, required: true },
+    targetPrice: {
+      type: Number,
+      required: true,
+      validate: {
+        validator: (value: number) => value > 0 && isFinite(value),
+        message: "targetPrice must be a positive finite number",
+      },
+    },
     condition: {
       type: String,
       enum: ["above", "below"],
