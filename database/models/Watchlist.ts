@@ -6,7 +6,8 @@ export interface IWatchlist extends Document {
   coinName: string;
   coinSymbol: string;
   image: string;
-  addedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const WatchlistSchema = new Schema<IWatchlist>(
@@ -20,7 +21,6 @@ const WatchlistSchema = new Schema<IWatchlist>(
   { timestamps: true }
 );
 
-// Prevent duplicate coins in watchlist for same user
 WatchlistSchema.index({ userId: 1, coinId: 1 }, { unique: true });
 
 export default mongoose.models.Watchlist ||

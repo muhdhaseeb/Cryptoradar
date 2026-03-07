@@ -11,6 +11,7 @@ export interface IAlert extends Document {
   isActive: boolean;
   triggeredAt?: Date;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const AlertSchema = new Schema<IAlert>(
@@ -31,6 +32,8 @@ const AlertSchema = new Schema<IAlert>(
   },
   { timestamps: true }
 );
+
+AlertSchema.index({ userId: 1 });
 
 export default mongoose.models.Alert ||
   mongoose.model<IAlert>("Alert", AlertSchema);

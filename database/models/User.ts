@@ -7,6 +7,7 @@ export interface IUser extends Document {
   image: string;
   emailNotifications: boolean;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const UserSchema = new Schema<IUser>(
