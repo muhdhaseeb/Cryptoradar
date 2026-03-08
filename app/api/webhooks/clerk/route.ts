@@ -11,22 +11,18 @@ export async function POST(req: Request) {
     throw new Error("Please add WEBHOOK_SECRET to .env.local");
   }
 
-  // Get headers
   const headerPayload = await headers();
   const svix_id = headerPayload.get("svix-id");
   const svix_timestamp = headerPayload.get("svix-timestamp");
   const svix_signature = headerPayload.get("svix-signature");
 
-  // If headers are missing, return error
   if (!svix_id || !svix_timestamp || !svix_signature) {
     return new Response("Error: Missing svix headers", { status: 400 });
   }
 
-  // Get body
   const payload = await req.json();
   const body = JSON.stringify(payload);
 
-  // Verify webhook signature
   const wh = new Webhook(WEBHOOK_SECRET);
   let evt: WebhookEvent;
 
@@ -41,31 +37,44 @@ export async function POST(req: Request) {
     return new Response("Error: Verification failed", { status: 400 });
   }
 
-  // Handle the event
   const eventType = evt.type;
 
   if (eventType === "user.created") {
     const { id, email_addresses, first_name, last_name, image_url } = evt.data;
 
-    await connectToDatabase();
+    // Validate email array
+    if (!email_addresses || email_addresses.length === 0) {
+      return new Response("Error: No email address found", { status: 400 });
+    }
 
-    await User.create({
-      clerkId: id,
-      email: email_addresses[0].email_address,
-      name: `${first_name || ""} ${last_name || ""}`.trim() || email_addresses[0].email_address.split("@")[0],
-      image: image_url,
-    });
-
-    console.log("New user saved to MongoDB:", id);
+    try {
+      await connectToDatabase();
+      await User.create({
+        clerkId: id,
+        email: email_addresses[0].email_address,
+        name:
+          `${first_name || ""} ${last_name || ""}`.trim() ||
+          email_addresses[0].email_address.split("@")[0],
+        image: image_url,
+      });
+      console.log("New user saved to MongoDB:", id);
+    } catch (err) {
+      console.error("Error saving user to MongoDB:", err);
+      return new Response("Error: Could not save user", { status: 500 });
+    }
   }
 
   if (eventType === "user.deleted") {
     const { id } = evt.data;
 
-    await connectToDatabase();
-    await User.findOneAndDelete({ clerkId: id });
-
-    console.log("User deleted from MongoDB:", id);
+    try {
+      await connectToDatabase();
+      await User.findOneAndDelete({ clerkId: id });
+      console.log("User deleted from MongoDB:", id);
+    } catch (err) {
+      console.error("Error deleting user from MongoDB:", err);
+      return new Response("Error: Could not delete user", { status: 500 });
+    }
   }
 
   return new Response("Webhook received", { status: 200 });
