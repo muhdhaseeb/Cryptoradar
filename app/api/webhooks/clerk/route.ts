@@ -20,8 +20,8 @@ export async function POST(req: Request) {
     return new Response("Error: Missing svix headers", { status: 400 });
   }
 
-  const payload = await req.json();
-  const body = JSON.stringify(payload);
+  // Use raw text body to preserve exact bytes for signature verification
+  const body = await req.text();
 
   const wh = new Webhook(WEBHOOK_SECRET);
   let evt: WebhookEvent;
@@ -42,22 +42,29 @@ export async function POST(req: Request) {
   if (eventType === "user.created") {
     const { id, email_addresses, first_name, last_name, image_url } = evt.data;
 
-    // Validate email array
     if (!email_addresses || email_addresses.length === 0) {
-      return new Response("Error: No email address found", { status: 400 });
+      console.error("No email addresses found for user:", id);
+      return new Response("Error: No email addresses", { status: 400 });
     }
 
     try {
       await connectToDatabase();
-      await User.create({
-        clerkId: id,
-        email: email_addresses[0].email_address,
-        name:
-          `${first_name || ""} ${last_name || ""}`.trim() ||
-          email_addresses[0].email_address.split("@")[0],
-        image: image_url,
-      });
-      console.log("New user saved to MongoDB:", id);
+
+      // Use upsert to handle duplicate webhooks gracefully
+      await User.findOneAndUpdate(
+        { clerkId: id },
+        {
+          clerkId: id,
+          email: email_addresses[0].email_address,
+          name:
+            `${first_name || ""} ${last_name || ""}`.trim() ||
+            email_addresses[0].email_address.split("@")[0],
+          image: image_url,
+        },
+        { upsert: true, new: true }
+      );
+
+      console.log("User saved to MongoDB:", id);
     } catch (err) {
       console.error("Error saving user to MongoDB:", err);
       return new Response("Error: Could not save user", { status: 500 });
