@@ -68,7 +68,7 @@ export default function TrendingBar({ trending }: TrendingBarProps) {
               {index + 1}
             </span>
             <span style={{ color: "#ffffff" }}>
-              {t.item.symbol.toUpperCase()}
+              {(t.item.symbol ?? "").toUpperCase()}
             </span>
             <span
               style={{

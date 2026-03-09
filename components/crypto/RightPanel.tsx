@@ -7,7 +7,11 @@ interface RightPanelProps {
 
 export default function RightPanel({ coins }: RightPanelProps) {
   // Pick a few coins to show as watchlist preview
-  const watchlistPreview = coins.slice(4, 8);
+  let watchlistPreview = coins.slice(4, 8);
+  if (coins.length < 8) {
+    // fall back to first few coins if not enough entries
+    watchlistPreview = coins.slice(0, Math.min(4, coins.length));
+  }
 
   // Preview only — Phase 6 will connect real user alerts
   const alerts = [
@@ -135,6 +139,11 @@ export default function RightPanel({ coins }: RightPanelProps) {
 
         {/* Watchlist items */}
         <div style={{ padding: "8px 16px" }}>
+          {watchlistPreview.length === 0 && (
+            <div style={{ color: "#888888", fontSize: "13px" }}>
+              No watchlist items
+            </div>
+          )}
           {watchlistPreview.map((coin, i) => {
             const isPositive =
               (coin.price_change_percentage_24h ?? 0) >= 0;
@@ -158,7 +167,7 @@ export default function RightPanel({ coins }: RightPanelProps) {
                     color: "#ffffff",
                   }}
                 >
-                  {coin.symbol.toUpperCase()}
+                  {(coin.symbol ?? "").toUpperCase()}
                 </span>
                 <span
                   style={{
@@ -167,7 +176,7 @@ export default function RightPanel({ coins }: RightPanelProps) {
                     color: isPositive ? "#00C48C" : "#ef4444",
                   }}
                 >
-                  {formatPercentage(coin.price_change_percentage_24h)}
+                  {formatPercentage(coin.price_change_percentage_24h ?? 0)}
                 </span>
               </div>
             );

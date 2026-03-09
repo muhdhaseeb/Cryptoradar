@@ -1,7 +1,17 @@
 import Link from "next/link";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 
 export default function Navbar() {
+  const pathname = usePathname();
+  const [search, setSearch] = useState("");
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    // TODO: implement search logic
+  };
+
   return (
     <header
       style={{
@@ -57,20 +67,30 @@ export default function Navbar() {
             { label: "Markets", href: "/markets" },
             { label: "Watchlist", href: "/watchlist" },
             { label: "Alerts", href: "/alerts" },
-          ].map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              style={{
-                color: "#888888",
-                textDecoration: "none",
-                fontSize: "13px",
-                fontWeight: 500,
-              }}
-            >
-              {link.label}
-            </Link>
-          ))}
+          ].map((link) => {
+            const isActive = pathname === link.href;
+            const baseStyle: React.CSSProperties = {
+              color: isActive ? "#ffffff" : "#888888",
+              textDecoration: "none",
+              fontSize: "13px",
+              fontWeight: isActive ? 600 : 500,
+              transition: "color 0.2s",
+              cursor: "pointer",
+            };
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                style={baseStyle}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#ffffff")}
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.color = isActive ? "#ffffff" : "#888888")
+                }
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
       </div>
 
@@ -103,7 +123,10 @@ export default function Navbar() {
           </svg>
           <input
             type="text"
+            aria-label="Search coins, pairs, or contracts"
             placeholder="Search coin, pair, or contract..."
+            value={search}
+            onChange={handleSearchChange}
             style={{
               background: "transparent",
               border: "none",

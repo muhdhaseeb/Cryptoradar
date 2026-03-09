@@ -1,13 +1,16 @@
 import { SignIn } from "@clerk/nextjs";
 import Link from "next/link";
+import { Inter, JetBrains_Mono } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const jbMono = JetBrains_Mono({ variable: "--font-jbmono" });
 
 export default function SignInPage() {
   return (
     <div
-      className="onboarding-grid"
+      className={`onboarding-grid ${inter.variable} ${jbMono.variable}`}
       style={{
         backgroundColor: "#0a0a0a",
-        fontFamily: "'Inter', -apple-system, sans-serif",
       }}
     >
       {/* Left — Features Pane */}
@@ -25,7 +28,7 @@ export default function SignInPage() {
       >
         {/* Animated ticker background */}
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+          /* font imports are now handled via next/font/google */
           @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
           .ticker-row { animation: ticker 30s linear infinite; display: flex; white-space: nowrap; gap: 40px; }
           .ticker-row-reverse { animation: ticker 40s linear infinite reverse; display: flex; white-space: nowrap; gap: 40px; }

@@ -62,9 +62,15 @@ export async function getTopCoins(limit: number = 50): Promise<Coin[]> {
 }
 
 export async function getCoinDetail(coinId: string): Promise<CoinDetail | null> {
+  // sanitize/encode the identifier to avoid malformed URLs
+  const safeId = encodeURIComponent(coinId.toLowerCase());
+  // optional pattern validation
+  if (!/^[a-z0-9-]+$/.test(coinId)) {
+    console.warn("getCoinDetail received unexpected coinId", coinId);
+  }
   try {
     const response = await fetchWithTimeout(
-      `${COINGECKO_BASE_URL}/coins/${coinId}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false`,
+      `${COINGECKO_BASE_URL}/coins/${safeId}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false`,
       { next: { revalidate: 60 } }
     );
     if (!response.ok) throw new Error(`CoinGecko API error: ${response.status}`);
@@ -79,9 +85,10 @@ export async function getCoinHistory(
   coinId: string,
   days: number = 7
 ): Promise<{ prices: [number, number][] } | null> {
+  const safeId = encodeURIComponent(coinId.toLowerCase());
   try {
     const response = await fetchWithTimeout(
-      `${COINGECKO_BASE_URL}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`,
+      `${COINGECKO_BASE_URL}/coins/${safeId}/market_chart?vs_currency=usd&days=${days}`,
       { next: { revalidate: 300 } }
     );
     if (!response.ok) throw new Error(`CoinGecko API error: ${response.status}`);
@@ -108,7 +115,8 @@ export async function searchCoins(query: string): Promise<{
   }
 }
 
-export function formatNumber(num: number): string {
+export function formatNumber(num: number | null | undefined): string {
+  if (num == null) return "—";
   if (num >= 1_000_000_000) return `$${(num / 1_000_000_000).toFixed(2)}B`;
   if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(2)}M`;
   return `$${num.toLocaleString("en-US")}`;

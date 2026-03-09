@@ -10,7 +10,8 @@ export default function LiveHeatmap({ coins }: LiveHeatmapProps) {
   const top16 = coins.slice(0, 16);
 
   const getBgColor = (change: number | null) => {
-    if (!change) return "#333333";
+    // treat only nullish as missing; 0 should still result in the mid color
+    if (change == null) return "#333333";
     if (change > 10) return "#00c48c";
     if (change > 5) return "#00a878";
     if (change > 2) return "#008a63";
@@ -102,7 +103,7 @@ export default function LiveHeatmap({ coins }: LiveHeatmapProps) {
                   marginTop: "2px",
                 }}
               >
-                {(top16[0].price_change_percentage_24h >= 0) ? "+" : ""}
+                {(top16[0].price_change_percentage_24h ?? 0) >= 0 ? "+" : ""}
                 {(top16[0].price_change_percentage_24h ?? 0).toFixed(1)}%
               </span>
             </div>

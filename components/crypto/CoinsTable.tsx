@@ -13,12 +13,14 @@ function Sparkline({ prices, positive }: { prices: number[]; positive: boolean }
 
   const min = Math.min(...prices);
   const max = Math.max(...prices);
-  const range = max - min || 1;
+  const range = max - min;
+  const safeRange = range || 1;
+  const stepCount = Math.max(1, prices.length - 1);
 
   const points = prices
     .map((price, i) => {
-      const x = (i / (prices.length - 1)) * 80;
-      const y = 24 - ((price - min) / range) * 22;
+      const x = (i / stepCount) * 80;
+      const y = 24 - ((price - min) / safeRange) * 22;
       return `${x},${y}`;
     })
     .join(" ");

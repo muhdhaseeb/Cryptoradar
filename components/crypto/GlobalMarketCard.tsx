@@ -12,13 +12,42 @@ interface GlobalMarketCardProps {
 }
 
 export default function GlobalMarketCard({ global }: GlobalMarketCardProps) {
-  const data = global.data;
-  const marketCap = data.total_market_cap.usd;
-  const volume = data.total_volume.usd;
-  const change = data.market_cap_change_percentage_24h_usd;
-  const btcDom = data.market_cap_percentage.btc;
-  const ethDom = data.market_cap_percentage.eth;
+  // defensive access and early return if structure is missing
+  const data = global?.data;
+  if (!data) {
+    return (
+      <div
+        style={{
+          backgroundColor: "#111111",
+          border: "1px solid #222222",
+          borderRadius: "4px",
+          padding: "16px",
+          color: "#888888",
+          fontSize: "13px",
+        }}
+      >
+        Global data unavailable
+      </div>
+    );
+  }
+
+  const marketCap = data.total_market_cap?.usd ?? 0;
+  const volume = data.total_volume?.usd ?? 0;
+  const change = data.market_cap_change_percentage_24h_usd ?? 0;
+  let btcDom = data.market_cap_percentage?.btc ?? 0;
+  let ethDom = data.market_cap_percentage?.eth ?? 0;
   const isPositive = change >= 0;
+
+  // clamp dominance to valid ranges
+  btcDom = Math.min(Math.max(btcDom, 0), 100);
+  ethDom = Math.min(Math.max(ethDom, 0), 100);
+  const totalDom = btcDom + ethDom;
+  if (totalDom > 100) {
+    // scale proportionally
+    const scale = 100 / totalDom;
+    btcDom *= scale;
+    ethDom *= scale;
+  }
 
   const formatT = (n: number) => {
     if (n >= 1_000_000_000_000) return `$${(n / 1_000_000_000_000).toFixed(2)}T`;
