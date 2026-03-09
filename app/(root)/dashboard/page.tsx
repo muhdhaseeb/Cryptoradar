@@ -124,7 +124,7 @@ export default async function DashboardPage() {
                   </div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginTop: "4px" }}>
                     <span style={{ fontSize: "24px", fontWeight: 600, fontFamily: "monospace", color: "#ffffff" }}>
-                      ${coins[0]?.current_price?.toLocaleString() ?? "—"}
+                      ${coins[0]?.current_price?.toLocaleString("en-US") ?? "—"}
                     </span>
                     <span
                       style={{

@@ -142,7 +142,7 @@ export function formatNumber(num: number): string {
   if (num >= 1_000_000) {
     return `$${(num / 1_000_000).toFixed(2)}M`;
   }
-  return `$${num.toLocaleString()}`;
+  return `$${num.toLocaleString("en-US")}`;
 }
 
 // Format price
@@ -154,7 +154,7 @@ export function formatPrice(price: number | null): string {
   if (price < 1) {
     return `$${price.toFixed(4)}`;
   }
-  return `$${price.toLocaleString(undefined, {
+  return `$${price.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
