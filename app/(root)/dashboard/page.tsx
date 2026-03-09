@@ -5,12 +5,16 @@ import LiveHeatmap from "@/components/crypto/LiveHeatmap";
 import CoinsTable from "@/components/crypto/CoinsTable";
 import RightPanel from "@/components/crypto/RightPanel";
 
+const TIMEOUT_MS = 8000;
+
 async function getGlobalData() {
   try {
-    const res = await fetch(
-      "https://api.coingecko.com/api/v3/global",
-      { next: { revalidate: 60 } }
-    );
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const res = await fetch("https://api.coingecko.com/api/v3/global", {
+      next: { revalidate: 60 },
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timer));
     if (!res.ok) return null;
     const payload = await res.json();
     return payload?.data ? payload : null;
@@ -21,10 +25,12 @@ async function getGlobalData() {
 
 async function getTrendingData() {
   try {
-    const res = await fetch(
-      "https://api.coingecko.com/api/v3/search/trending",
-      { next: { revalidate: 300 } }
-    );
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const res = await fetch("https://api.coingecko.com/api/v3/search/trending", {
+      next: { revalidate: 300 },
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timer));
     if (!res.ok) return null;
     const payload = await res.json();
     return Array.isArray(payload?.coins) ? payload : null;

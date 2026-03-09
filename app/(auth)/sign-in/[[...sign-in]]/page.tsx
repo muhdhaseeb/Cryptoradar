@@ -36,7 +36,7 @@ export default function SignInPage() {
           .onboarding-grid {
             display: grid;
             grid-template-columns: 1fr 500px;
-            height: 100vh;
+            min-height: 100dvh;
           }
 
           .features-pane-inner {
@@ -44,7 +44,8 @@ export default function SignInPage() {
           }
 
           .auth-pane-inner {
-            padding: 0 60px;
+            padding: 60px 60px 40px;
+            overflow-y: auto;
           }
 
           @media (max-width: 900px) {
@@ -183,8 +184,6 @@ export default function SignInPage() {
           backgroundColor: "#111111",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
         }}
       >
         <div style={{ marginBottom: "32px", width: "100%" }}>

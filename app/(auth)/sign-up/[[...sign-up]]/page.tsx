@@ -10,7 +10,6 @@ export default function SignUpPage() {
         fontFamily: "'Inter', -apple-system, sans-serif",
       }}
     >
-      {/* Left — Features Pane */}
       <section
         className="features-pane-inner"
         style={{
@@ -34,28 +33,30 @@ export default function SignUpPage() {
           .onboarding-grid {
             display: grid;
             grid-template-columns: 1fr 500px;
-            height: 100vh;
+            min-height: 100dvh;
           }
           .features-pane-inner { padding: 32px 80px; }
-          .auth-pane-inner { padding: 0 60px; }
+          .auth-pane-inner {
+            padding: 60px 60px 40px;
+            overflow-y: auto;
+          }
           @media (max-width: 900px) {
             .onboarding-grid {
               grid-template-columns: 1fr;
               grid-template-rows: auto 1fr;
               height: auto;
-              min-height: 100vh;
+              min-height: 100dvh;
               overflow-y: auto;
             }
             .features-pane-inner { padding: 32px 24px; }
             .features-pane-inner .feature-card-hover { display: none; }
-            .auth-pane-inner { padding: 32px 24px; min-height: 100vh; }
+            .auth-pane-inner { padding: 32px 24px; }
           }
           @media (prefers-reduced-motion: reduce) {
             .ticker-row, .ticker-row-reverse, .ticker-row-fast { animation: none; }
           }
         `}</style>
 
-        {/* Animated ticker */}
         <div
           aria-hidden="true"
           style={{
@@ -86,9 +87,7 @@ export default function SignUpPage() {
           </div>
         </div>
 
-        {/* Features content */}
         <div style={{ position: "relative", zIndex: 1, maxWidth: "600px" }}>
-          {/* Logo */}
           <div style={{ fontSize: "24px", fontWeight: 700, letterSpacing: "-1px", display: "flex", alignItems: "center", gap: "12px", marginBottom: "60px" }}>
             <div style={{ width: "40px", height: "40px", background: "linear-gradient(135deg, #3b82f6, #00C48C)", borderRadius: "8px", display: "grid", placeItems: "center" }}>
               <div style={{ width: "20px", height: "20px", background: "#0a0a0a", borderRadius: "4px" }} />
@@ -96,7 +95,6 @@ export default function SignUpPage() {
             CryptoRadar
           </div>
 
-          {/* Feature cards */}
           {[
             { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>, color: "#3b82f6", title: "Professional Terminal", desc: "Advanced charting, real-time order books, and global market heatmaps in a single high-performance view.", badge: null },
             { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>, color: "#00C48C", title: "AI Market Intelligence", desc: "Proprietary AI summaries that distill complex price action and on-chain data into actionable insights.", badge: "NEW" },
@@ -116,15 +114,12 @@ export default function SignUpPage() {
         </div>
       </section>
 
-      {/* Right — Clerk SignUp */}
       <section
         className="auth-pane-inner"
         style={{
           backgroundColor: "#111111",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
         }}
       >
         <div style={{ marginBottom: "32px", width: "100%" }}>
@@ -162,7 +157,6 @@ export default function SignUpPage() {
             Log in
           </Link>
         </div>
-
       </section>
     </div>
   );

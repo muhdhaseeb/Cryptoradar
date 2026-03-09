@@ -1,6 +1,14 @@
 const COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3";
+const FETCH_TIMEOUT_MS = 8000;
 
-// Types
+function fetchWithTimeout(url: string, options: RequestInit & { next?: { revalidate: number } }) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() =>
+    clearTimeout(timer)
+  );
+}
+
 export interface Coin {
   id: string;
   symbol: string;
@@ -15,21 +23,15 @@ export interface Coin {
   high_24h: number;
   low_24h: number;
   circulating_supply: number;
-  sparkline_in_7d?: {
-    price: number[];
-  };
+  sparkline_in_7d?: { price: number[] };
 }
 
 export interface CoinDetail {
   id: string;
   symbol: string;
   name: string;
-  image: {
-    large: string;
-  };
-  description: {
-    en: string;
-  };
+  image: { large: string };
+  description: { en: string };
   market_data: {
     current_price: { usd: number };
     price_change_percentage_24h: number;
@@ -45,20 +47,13 @@ export interface CoinDetail {
   };
 }
 
-// Fetch top coins by market cap
 export async function getTopCoins(limit: number = 50): Promise<Coin[]> {
   try {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${COINGECKO_BASE_URL}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${limit}&page=1&sparkline=true&price_change_percentage=24h`,
-      {
-        next: { revalidate: 60 }, // Cache for 60 seconds
-      }
+      { next: { revalidate: 60 } }
     );
-
-    if (!response.ok) {
-      throw new Error(`CoinGecko API error: ${response.status}`);
-    }
-
+    if (!response.ok) throw new Error(`CoinGecko API error: ${response.status}`);
     return await response.json();
   } catch (error) {
     console.error("Error fetching top coins:", error);
@@ -66,20 +61,13 @@ export async function getTopCoins(limit: number = 50): Promise<Coin[]> {
   }
 }
 
-// Fetch single coin details
 export async function getCoinDetail(coinId: string): Promise<CoinDetail | null> {
   try {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${COINGECKO_BASE_URL}/coins/${coinId}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false`,
-      {
-        next: { revalidate: 60 },
-      }
+      { next: { revalidate: 60 } }
     );
-
-    if (!response.ok) {
-      throw new Error(`CoinGecko API error: ${response.status}`);
-    }
-
+    if (!response.ok) throw new Error(`CoinGecko API error: ${response.status}`);
     return await response.json();
   } catch (error) {
     console.error("Error fetching coin detail:", error);
@@ -87,23 +75,16 @@ export async function getCoinDetail(coinId: string): Promise<CoinDetail | null> 
   }
 }
 
-// Fetch historical price data for charts
 export async function getCoinHistory(
   coinId: string,
   days: number = 7
 ): Promise<{ prices: [number, number][] } | null> {
   try {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${COINGECKO_BASE_URL}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`,
-      {
-        next: { revalidate: 300 }, // Cache for 5 minutes
-      }
+      { next: { revalidate: 300 } }
     );
-
-    if (!response.ok) {
-      throw new Error(`CoinGecko API error: ${response.status}`);
-    }
-
+    if (!response.ok) throw new Error(`CoinGecko API error: ${response.status}`);
     return await response.json();
   } catch (error) {
     console.error("Error fetching coin history:", error);
@@ -111,22 +92,15 @@ export async function getCoinHistory(
   }
 }
 
-// Search coins
 export async function searchCoins(query: string): Promise<{
   coins: { id: string; name: string; symbol: string; thumb: string }[];
 }> {
   try {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${COINGECKO_BASE_URL}/search?query=${encodeURIComponent(query)}`,
-      {
-        next: { revalidate: 300 },
-      }
+      { next: { revalidate: 300 } }
     );
-
-    if (!response.ok) {
-      throw new Error(`CoinGecko API error: ${response.status}`);
-    }
-
+    if (!response.ok) throw new Error(`CoinGecko API error: ${response.status}`);
     return await response.json();
   } catch (error) {
     console.error("Error searching coins:", error);
@@ -134,33 +108,22 @@ export async function searchCoins(query: string): Promise<{
   }
 }
 
-// Format large numbers
 export function formatNumber(num: number): string {
-  if (num >= 1_000_000_000) {
-    return `$${(num / 1_000_000_000).toFixed(2)}B`;
-  }
-  if (num >= 1_000_000) {
-    return `$${(num / 1_000_000).toFixed(2)}M`;
-  }
+  if (num >= 1_000_000_000) return `$${(num / 1_000_000_000).toFixed(2)}B`;
+  if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(2)}M`;
   return `$${num.toLocaleString("en-US")}`;
 }
 
-// Format price
 export function formatPrice(price: number | null): string {
   if (price === null || price === undefined) return "—";
-  if (price < 0.01) {
-    return `$${price.toFixed(6)}`;
-  }
-  if (price < 1) {
-    return `$${price.toFixed(4)}`;
-  }
+  if (price < 0.01) return `$${price.toFixed(6)}`;
+  if (price < 1) return `$${price.toFixed(4)}`;
   return `$${price.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
 }
 
-// Format percentage
 export function formatPercentage(percentage: number | null): string {
   if (percentage === null || percentage === undefined) return "—";
   return `${percentage >= 0 ? "+" : ""}${percentage.toFixed(2)}%`;
