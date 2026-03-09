@@ -11,7 +11,9 @@ async function getGlobalData() {
       "https://api.coingecko.com/api/v3/global",
       { next: { revalidate: 60 } }
     );
-    return res.json();
+    if (!res.ok) return null;
+    const payload = await res.json();
+    return payload?.data ? payload : null;
   } catch {
     return null;
   }
@@ -23,7 +25,9 @@ async function getTrendingData() {
       "https://api.coingecko.com/api/v3/search/trending",
       { next: { revalidate: 300 } }
     );
-    return res.json();
+    if (!res.ok) return null;
+    const payload = await res.json();
+    return Array.isArray(payload?.coins) ? payload : null;
   } catch {
     return null;
   }
@@ -35,6 +39,10 @@ export default async function DashboardPage() {
     getGlobalData(),
     getTrendingData(),
   ]);
+
+  const bitcoin = coins.find((c) => c.id === "bitcoin") ?? coins[0];
+  const btcPrices = bitcoin?.sparkline_in_7d?.price ?? [];
+  const hasBtcChart = btcPrices.length >= 2;
 
   return (
     <div
@@ -60,6 +68,7 @@ export default async function DashboardPage() {
           padding: "12px",
           flexGrow: 1,
           overflowY: "auto",
+          overflowX: "auto",
         }}
       >
         {/* Left column — Global Market + Heatmap */}
@@ -68,10 +77,10 @@ export default async function DashboardPage() {
           <LiveHeatmap coins={coins} />
         </div>
 
-        {/* Center column — Chart placeholder + Coins Table */}
+        {/* Center column — Bitcoin Chart + Coins Table */}
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
 
-          {/* Bitcoin chart card — static for now, Phase 4 makes it live */}
+          {/* Bitcoin chart card */}
           <div
             style={{
               backgroundColor: "#111111",
@@ -124,17 +133,19 @@ export default async function DashboardPage() {
                   </div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginTop: "4px" }}>
                     <span style={{ fontSize: "24px", fontWeight: 600, fontFamily: "monospace", color: "#ffffff" }}>
-                      ${coins[0]?.current_price?.toLocaleString("en-US") ?? "—"}
+                      {bitcoin?.current_price
+                        ? `$${bitcoin.current_price.toLocaleString("en-US")}`
+                        : "—"}
                     </span>
                     <span
                       style={{
                         fontSize: "13px",
                         fontFamily: "monospace",
-                        color: (coins[0]?.price_change_percentage_24h ?? 0) >= 0 ? "#00C48C" : "#ef4444",
+                        color: (bitcoin?.price_change_percentage_24h ?? 0) >= 0 ? "#00C48C" : "#ef4444",
                       }}
                     >
-                      {(coins[0]?.price_change_percentage_24h ?? 0) >= 0 ? "+" : ""}
-                      {coins[0]?.price_change_percentage_24h?.toFixed(2)}%
+                      {(bitcoin?.price_change_percentage_24h ?? 0) >= 0 ? "+" : ""}
+                      {(bitcoin?.price_change_percentage_24h ?? 0).toFixed(2)}%
                     </span>
                   </div>
                 </div>
@@ -171,9 +182,9 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            {/* Chart — SVG sparkline from real data */}
+            {/* Chart — SVG sparkline from real BTC data */}
             <div style={{ padding: "0 16px 16px", height: "280px" }}>
-              {coins[0]?.sparkline_in_7d?.price && (
+              {hasBtcChart ? (
                 <svg
                   width="100%"
                   height="100%"
@@ -187,7 +198,6 @@ export default async function DashboardPage() {
                     </linearGradient>
                   </defs>
 
-                  {/* Grid lines */}
                   {[70, 140, 210].map((y) => (
                     <line
                       key={y}
@@ -200,9 +210,8 @@ export default async function DashboardPage() {
                     />
                   ))}
 
-                  {/* Real price line */}
                   {(() => {
-                    const prices = coins[0].sparkline_in_7d!.price;
+                    const prices = btcPrices;
                     const min = Math.min(...prices);
                     const max = Math.max(...prices);
                     const range = max - min || 1;
@@ -211,35 +220,23 @@ export default async function DashboardPage() {
                       const y = 270 - ((p - min) / range) * 260;
                       return `${x},${y}`;
                     });
-                    const pathD =
-                      "M" +
-                      points.join(" L") +
-                      ` L1000,280 L0,280 Z`;
+                    const pathD = "M" + points.join(" L") + " L1000,280 L0,280 Z";
                     const lineD = "M" + points.join(" L");
+                    const last = prices[prices.length - 1];
+                    const lastY = 270 - ((last - min) / range) * 260;
                     return (
                       <>
                         <path d={pathD} fill="url(#chartGrad)" />
-                        <path
-                          d={lineD}
-                          fill="none"
-                          stroke="#00C48C"
-                          strokeWidth="2"
-                        />
-                        <circle
-                          cx={1000}
-                          cy={(() => {
-                            const last = prices[prices.length - 1];
-                            return 270 - ((last - min) / range) * 260;
-                          })()}
-                          r="4"
-                          fill="white"
-                          stroke="#111111"
-                          strokeWidth="2"
-                        />
+                        <path d={lineD} fill="none" stroke="#00C48C" strokeWidth="2" />
+                        <circle cx={1000} cy={lastY} r="4" fill="white" stroke="#111111" strokeWidth="2" />
                       </>
                     );
                   })()}
                 </svg>
+              ) : (
+                <div style={{ display: "grid", placeItems: "center", height: "100%", color: "#555555", fontSize: "13px" }}>
+                  Chart data unavailable
+                </div>
               )}
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { SignIn } from "@clerk/nextjs";
+import Link from "next/link";
 
 export default function SignInPage() {
   return (
@@ -65,9 +66,13 @@ export default function SignInPage() {
               min-height: 100vh;
             }
           }
+          @media (prefers-reduced-motion: reduce) {
+            .ticker-row, .ticker-row-reverse, .ticker-row-fast { animation: none; }
+          }
         `}</style>
 
         <div
+          aria-hidden="true"
           style={{
             position: "absolute",
             top: 0, left: 0, width: "100%", height: "100%",
@@ -238,6 +243,13 @@ export default function SignInPage() {
             },
           }}
         />
+
+        <div style={{ marginTop: "24px", textAlign: "center", fontSize: "13px", color: "#888888", width: "100%" }}>
+          Don&apos;t have an account?{" "}
+          <Link href="/sign-up" style={{ color: "#ffffff", fontWeight: 500, textDecoration: "none" }}>
+            Sign up free
+          </Link>
+        </div>
       </section>
     </div>
   );

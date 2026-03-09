@@ -1,5 +1,3 @@
-import { Coin } from "@/lib/coingecko";
-
 interface TrendingCoin {
   item: {
     id: string;

@@ -102,8 +102,8 @@ export default function LiveHeatmap({ coins }: LiveHeatmapProps) {
                   marginTop: "2px",
                 }}
               >
-                {top16[0].price_change_percentage_24h >= 0 ? "+" : ""}
-                {top16[0].price_change_percentage_24h?.toFixed(1)}%
+                {(top16[0].price_change_percentage_24h >= 0) ? "+" : ""}
+                {(top16[0].price_change_percentage_24h ?? 0).toFixed(1)}%
               </span>
             </div>
           )}
@@ -144,8 +144,8 @@ export default function LiveHeatmap({ coins }: LiveHeatmapProps) {
                   marginTop: "2px",
                 }}
               >
-                {top16[1].price_change_percentage_24h >= 0 ? "+" : ""}
-                {top16[1].price_change_percentage_24h?.toFixed(1)}%
+                {(top16[1].price_change_percentage_24h ?? 0) >= 0 ? "+" : ""}
+                {(top16[1].price_change_percentage_24h ?? 0).toFixed(1)}%
               </span>
             </div>
           )}
@@ -186,8 +186,8 @@ export default function LiveHeatmap({ coins }: LiveHeatmapProps) {
                   marginTop: "2px",
                 }}
               >
-                {coin.price_change_percentage_24h >= 0 ? "+" : ""}
-                {coin.price_change_percentage_24h?.toFixed(1)}%
+                {(coin.price_change_percentage_24h ?? 0) >= 0 ? "+" : ""}
+                {(coin.price_change_percentage_24h ?? 0).toFixed(1)}%
               </span>
             </div>
           ))}

@@ -59,7 +59,7 @@ export async function getTopCoins(limit: number = 50): Promise<Coin[]> {
       throw new Error(`CoinGecko API error: ${response.status}`);
     }
 
-    return response.json();
+    return await response.json();
   } catch (error) {
     console.error("Error fetching top coins:", error);
     return [];
@@ -80,7 +80,7 @@ export async function getCoinDetail(coinId: string): Promise<CoinDetail | null> 
       throw new Error(`CoinGecko API error: ${response.status}`);
     }
 
-    return response.json();
+    return await response.json();
   } catch (error) {
     console.error("Error fetching coin detail:", error);
     return null;
@@ -104,7 +104,7 @@ export async function getCoinHistory(
       throw new Error(`CoinGecko API error: ${response.status}`);
     }
 
-    return response.json();
+    return await response.json();
   } catch (error) {
     console.error("Error fetching coin history:", error);
     return null;
@@ -117,7 +117,7 @@ export async function searchCoins(query: string): Promise<{
 }> {
   try {
     const response = await fetch(
-      `${COINGECKO_BASE_URL}/search?query=${query}`,
+      `${COINGECKO_BASE_URL}/search?query=${encodeURIComponent(query)}`,
       {
         next: { revalidate: 300 },
       }
@@ -127,7 +127,7 @@ export async function searchCoins(query: string): Promise<{
       throw new Error(`CoinGecko API error: ${response.status}`);
     }
 
-    return response.json();
+    return await response.json();
   } catch (error) {
     console.error("Error searching coins:", error);
     return { coins: [] };
@@ -147,7 +147,7 @@ export function formatNumber(num: number): string {
 
 // Format price
 export function formatPrice(price: number | null): string {
-  if (price === null || price === undefined) return "$0.00";
+  if (price === null || price === undefined) return "—";
   if (price < 0.01) {
     return `$${price.toFixed(6)}`;
   }
@@ -162,6 +162,6 @@ export function formatPrice(price: number | null): string {
 
 // Format percentage
 export function formatPercentage(percentage: number | null): string {
-  if (percentage === null || percentage === undefined) return "0.00%";
+  if (percentage === null || percentage === undefined) return "—";
   return `${percentage >= 0 ? "+" : ""}${percentage.toFixed(2)}%`;
 }
