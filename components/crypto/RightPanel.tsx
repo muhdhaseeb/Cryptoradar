@@ -9,7 +9,7 @@ export default function RightPanel({ coins }: RightPanelProps) {
   // Pick a few coins to show as watchlist preview
   const watchlistPreview = coins.slice(4, 8);
 
-  // Mock alerts for now (Phase 6 will make these real)
+  // Preview only — Phase 6 will connect real user alerts
   const alerts = [
     { symbol: "BTC", condition: "Crosses Above", target: "$70,000", up: true },
     { symbol: "ETH", condition: "Drops Below", target: "$3,000", up: false },
