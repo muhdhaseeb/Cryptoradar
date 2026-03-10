@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
     }
     throw err;
   }
+}
 
 // DELETE — remove coin from watchlist
 export async function DELETE(request: NextRequest) {

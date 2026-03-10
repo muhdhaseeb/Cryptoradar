@@ -60,20 +60,20 @@ export function useWatchlist(coinId?: string) {
     }
   }
 
-  async function removeFromWatchlist(coinId: string) {
+  async function removeFromWatchlist(coinIdToRemove: string) {
     setLoading(true);
     try {
       const res = await fetch("/api/watchlist", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ coinId }),
+        body: JSON.stringify({ coinId: coinIdToRemove }),
       });
       if (!res.ok) {
         const text = await res.text();
         throw new Error(`Remove watchlist failed: ${res.status} ${text}`);
       }
-      setWatchlist((prev) => prev.filter((item) => item.coinId !== coinId));
-      setIsWatching(false);
+      setWatchlist((prev) => prev.filter((item) => item.coinId !== coinIdToRemove));
+      if (coinIdToRemove === coinId) setIsWatching(false);
     } catch (error) {
       console.error("Error removing from watchlist:", error);
       throw error;
