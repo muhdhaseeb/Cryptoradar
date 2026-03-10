@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Watchlist from "@/database/models/Watchlist";
 
+const isNonEmptyString = (value: unknown): value is string =>
+typeof value === "string" && value.trim().length > 0;
+
 // GET — fetch user's watchlist
 export async function GET() {
   const { userId } = await auth();
@@ -25,8 +28,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
   }
 
-  const { coinId, coinName, coinSymbol, image } = body;
-  if (!coinId || !coinName || !coinSymbol) {
+  const { coinId, coinName, coinSymbol, image } = body ?? {};
+  if (!isNonEmptyString(coinId) || !isNonEmptyString(coinName) || !isNonEmptyString(coinSymbol)) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
@@ -55,8 +58,10 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
   }
 
-  const { coinId } = body;
-  if (!coinId) return NextResponse.json({ error: "Missing coinId" }, { status: 400 });
+  const { coinId } = body ?? {};
+  if (!isNonEmptyString(coinId)) {
+    return NextResponse.json({ error: "Missing coinId" }, { status: 400 });
+  }
 
   await connectToDatabase();
   await Watchlist.findOneAndDelete({ userId, coinId });

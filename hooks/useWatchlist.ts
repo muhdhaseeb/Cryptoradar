@@ -12,7 +12,7 @@ interface WatchlistItem {
 export function useWatchlist(coinId?: string) {
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [isWatching, setIsWatching] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchWatchlist();
@@ -25,6 +25,7 @@ export function useWatchlist(coinId?: string) {
   }, [watchlist, coinId]);
 
   async function fetchWatchlist() {
+    setLoading(true);
     try {
       const res = await fetch("/api/watchlist");
       if (res.ok) {
@@ -33,6 +34,8 @@ export function useWatchlist(coinId?: string) {
       }
     } catch (error) {
       console.error("Error fetching watchlist:", error);
+    } finally {
+      setLoading(false);
     }
   }
 
