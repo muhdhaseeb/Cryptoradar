@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 interface Props {
   coinId: string;
@@ -19,13 +19,40 @@ export default function CoinChart({ coinId, initialHistory }: Props) {
   const [active, setActive] = useState("1M");
   const [history, setHistory] = useState(initialHistory);
   const [loading, setLoading] = useState(false);
+  const abortCtrl = useRef<AbortController | null>(null);
 
   async function handleTimeframe(label: string, days: number) {
     setActive(label);
     setLoading(true);
-    const res = await fetch(`/api/coin-history?coinId=${coinId}&days=${days}`);
-    const data = await res.json();    setHistory(data);
-    setLoading(false);
+
+    // cancel any in-flight request before starting a new one
+    if (abortCtrl.current) {
+      abortCtrl.current.abort();
+    }
+    const controller = new AbortController();
+    abortCtrl.current = controller;
+
+    try {
+      const res = await fetch(
+        `/api/coin-history?coinId=${coinId}&days=${days}`,
+        { signal: controller.signal }
+      );
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      setHistory(data);
+    } catch (err: any) {
+      if (err.name === "AbortError") {
+        // request was superseded; nothing to do
+      } else {
+        console.error("Error fetching history:", err);
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   const prices = history?.prices ?? [];

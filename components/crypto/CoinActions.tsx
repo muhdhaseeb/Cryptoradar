@@ -7,11 +7,21 @@ interface Props {
   coinImage: string;
 }
 
-export default function CoinActions({ coinName, coinSymbol }: Props) {
+export default function CoinActions({ coinId, coinName, coinSymbol, coinImage }: Props) {
   return (
-    <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
+    <div style={{ display: "flex", gap: "12px", marginBottom: "16px", alignItems: "center" }}>
+      {/* show coin image for context */}
+      <img
+        src={coinImage}
+        alt={coinName}
+        width={24}
+        height={24}
+        style={{ borderRadius: "50%" }}
+      />
       <button
-        onClick={() => alert(`Watchlist coming in Phase 5!`)}
+        onClick={() =>
+          alert(`Watchlist for ${coinName} (${coinSymbol}) coming in Phase 5!`)
+        }
         style={{
           flex: 1,
           display: "flex",
@@ -34,7 +44,9 @@ export default function CoinActions({ coinName, coinSymbol }: Props) {
         Watchlist
       </button>
       <button
-        onClick={() => alert(`Alerts coming in Phase 6!`)}
+        onClick={() =>
+          alert(`Alerts for ${coinSymbol} (id: ${coinId}) coming in Phase 6!`)
+        }
         style={{
           flex: 1,
           display: "flex",

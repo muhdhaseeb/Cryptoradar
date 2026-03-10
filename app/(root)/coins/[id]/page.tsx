@@ -13,6 +13,10 @@ export default async function CoinPage({ params }: { params: Promise<{ id: strin
 
   if (!coin) notFound();
 
+  // getCoinHistory can return null if the external API fails; provide a safe
+  // fallback so the chart component never receives `null` and crash.
+  const chartHistory = history ?? { prices: [] };
+
   const price = coin.market_data.current_price.usd;
   const change24h = coin.market_data.price_change_percentage_24h;
   const isPositive = (change24h ?? 0) >= 0;
@@ -73,7 +77,7 @@ export default async function CoinPage({ params }: { params: Promise<{ id: strin
 
           {/* Chart */}
           <div style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "24px", marginBottom: "24px" }}>
-            <CoinChart coinId={id} initialHistory={history} />
+            <CoinChart coinId={id} initialHistory={chartHistory} />
           </div>
 
           {/* AI Summary */}
@@ -102,12 +106,27 @@ export default async function CoinPage({ params }: { params: Promise<{ id: strin
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "24px", marginBottom: "24px" }}>
               {[
-                { label: "Market Cap", value: formatNumber(coin.market_data.market_cap.usd) },
-                { label: "24h Volume", value: formatNumber(coin.market_data.total_volume.usd) },
-                { label: "Circulating Supply", value: `${(coin.market_data.circulating_supply / 1_000_000).toFixed(2)}M ${coin.symbol.toUpperCase()}` },
-                { label: "24h High / Low", value: `${formatPrice(coin.market_data.high_24h.usd)} / ${formatPrice(coin.market_data.low_24h.usd)}`, small: true },
-                { label: "All Time High", value: formatPrice(coin.market_data.ath.usd) },
-                { label: "ATH Change", value: formatPercentage(coin.market_data.ath_change_percentage.usd) },
+                { label: "Market Cap", value: formatNumber(coin.market_data?.market_cap?.usd ?? null) },
+                { label: "24h Volume", value: formatNumber(coin.market_data?.total_volume?.usd ?? null) },
+                {
+                  label: "Circulating Supply",
+                  value: (() => {
+                    const circ = coin.market_data?.circulating_supply ?? null;
+                    return circ !== null ? `${(circ / 1_000_000).toFixed(2)}M ${coin.symbol.toUpperCase()}` : "—";
+                  })(),
+                },
+                {
+                  label: "24h High / Low",
+                  value: `${formatPrice(coin.market_data?.high_24h?.usd ?? null)} / ${formatPrice(
+                    coin.market_data?.low_24h?.usd ?? null
+                  )}`,
+                  small: true,
+                },
+                { label: "All Time High", value: formatPrice(coin.market_data?.ath?.usd ?? null) },
+                {
+                  label: "ATH Change",
+                  value: formatPercentage(coin.market_data?.ath_change_percentage?.usd ?? null),
+                },
               ].map((stat) => (
                 <div key={stat.label} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                   <span style={{ fontSize: "11px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8" }}>

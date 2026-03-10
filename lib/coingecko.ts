@@ -123,7 +123,7 @@ export function formatNumber(num: number | null | undefined): string {
   return `$${num.toLocaleString("en-US")}`;
 }
 
-export function formatPrice(price: number | null): string {
+export function formatPrice(price: number | null | undefined): string {
   if (price === null || price === undefined) return "—";
   if (price < 0.01) return `$${price.toFixed(6)}`;
   if (price < 1) return `$${price.toFixed(4)}`;
@@ -133,7 +133,7 @@ export function formatPrice(price: number | null): string {
   })}`;
 }
 
-export function formatPercentage(percentage: number | null): string {
+export function formatPercentage(percentage: number | null | undefined): string {
   if (percentage === null || percentage === undefined) return "—";
   return `${percentage >= 0 ? "+" : ""}${percentage.toFixed(2)}%`;
 }
