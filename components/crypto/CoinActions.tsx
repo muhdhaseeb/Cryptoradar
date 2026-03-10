@@ -1,5 +1,7 @@
 "use client";
 
+import { useWatchlist } from "@/hooks/useWatchlist";
+
 interface Props {
   coinId: string;
   coinName: string;
@@ -8,45 +10,64 @@ interface Props {
 }
 
 export default function CoinActions({ coinId, coinName, coinSymbol, coinImage }: Props) {
+  const { isWatching, loading, addToWatchlist, removeFromWatchlist } = useWatchlist(coinId);
+
+  async function handleWatchlist() {
+    try {
+      if (isWatching) {
+        await removeFromWatchlist(coinId);
+      } else {
+        await addToWatchlist({ coinId, coinName, coinSymbol, image: coinImage });
+      }
+    } catch (err) {
+      console.error("Watchlist action failed:", err);
+      // TODO: replace alert with toast/snackbar when available
+      alert("Unable to update watchlist. Please try again.");
+    }
+  }
+
   return (
-    <div style={{ display: "flex", gap: "12px", marginBottom: "16px", alignItems: "center" }}>
-      {/* show coin image for context */}
-      <img
-        src={coinImage}
-        alt={coinName}
-        width={24}
-        height={24}
-        style={{ borderRadius: "50%" }}
-      />
+    <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
       <button
-        onClick={() =>
-          alert(`Watchlist for ${coinName} (${coinSymbol}) coming in Phase 5!`)
-        }
+        onClick={handleWatchlist}
+        disabled={loading}
         style={{
           flex: 1,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           gap: "8px",
-          background: "transparent",
-          border: "1px solid rgba(255,255,255,0.1)",
-          color: "#ffffff",
+          background: isWatching ? "rgba(0,196,140,0.15)" : "transparent",
+          border: `1px solid ${isWatching ? "#00C48C" : "rgba(255,255,255,0.1)"}`,
+          color: isWatching ? "#00C48C" : "#ffffff",
           padding: "12px 16px",
           borderRadius: "4px",
           fontSize: "14px",
           fontWeight: 500,
-          cursor: "pointer",
+          cursor: loading ? "not-allowed" : "pointer",
+          opacity: loading ? 0.6 : 1,
+          transition: "all 0.2s ease",
         }}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-        </svg>
-        Watchlist
+        {isWatching ? (
+          <>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Watching
+          </>
+        ) : (
+          <>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+            </svg>
+            Watchlist
+          </>
+        )}
       </button>
+
       <button
-        onClick={() =>
-          alert(`Alerts for ${coinSymbol} (id: ${coinId}) coming in Phase 6!`)
-        }
+        onClick={() => alert("Alerts coming in Phase 6!")}
         style={{
           flex: 1,
           display: "flex",
@@ -61,6 +82,7 @@ export default function CoinActions({ coinId, coinName, coinSymbol, coinImage }:
           fontSize: "14px",
           fontWeight: 500,
           cursor: "pointer",
+          transition: "all 0.2s ease",
         }}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
