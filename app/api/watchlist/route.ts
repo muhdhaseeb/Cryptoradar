@@ -32,14 +32,15 @@ export async function POST(request: NextRequest) {
 
   await connectToDatabase();
 
-  const existing = await Watchlist.findOne({ userId, coinId });
-  if (existing) {
-    return NextResponse.json({ error: "Already in watchlist" }, { status: 409 });
+  try {
+    const item = await Watchlist.create({ userId, coinId, coinName, coinSymbol, image });
+    return NextResponse.json(item, { status: 201 });
+  } catch (err: any) {
+    if (err?.code === 11000) {
+      return NextResponse.json({ error: "Already in watchlist" }, { status: 409 });
+    }
+    throw err;
   }
-
-  const item = await Watchlist.create({ userId, coinId, coinName, coinSymbol, image });
-  return NextResponse.json(item, { status: 201 });
-}
 
 // DELETE — remove coin from watchlist
 export async function DELETE(request: NextRequest) {

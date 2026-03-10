@@ -24,6 +24,7 @@ export default async function WatchlistPage() {
 
   let watchlistItems: WatchlistDBItem[] = [];
   let watchlistWithPrices: WatchlistWithPrice[] = [];
+  let loadError = false;
 
   try {
     await connectToDatabase();
@@ -38,8 +39,7 @@ export default async function WatchlistPage() {
   } catch (err) {
     console.error("Error loading watchlist page:", err);
     // fallback values to avoid crashing UI
-    watchlistWithPrices = watchlistItems.map((item) => ({ ...item, liveData: undefined }));
-  }
+    loadError = true;  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 64px)" }}>
@@ -102,7 +102,16 @@ export default async function WatchlistPage() {
             </Link>
           </div>
 
-          {watchlistItems.length === 0 ? (
+          {loadError ? (
+            <div style={{ background: "#111111", border: "1px solid #ef4444", borderRadius: "4px", padding: "64px 24px", textAlign: "center" }}>
+              <p style={{ color: "#ef4444", fontSize: "16px", marginBottom: "8px" }}>
+                Failed to load watchlist
+              </p>
+              <p style={{ color: "#888888", fontSize: "13px" }}>
+                There was a problem connecting to the database. Please try refreshing the page.
+              </p>
+            </div>
+          ) : watchlistItems.length === 0 ? (
             <div style={{ background: "#111111", border: "1px dashed #222222", borderRadius: "4px", padding: "64px 24px", textAlign: "center" }}>
               <p style={{ color: "#888888", fontSize: "16px", marginBottom: "16px" }}>Your watchlist is empty</p>
               <Link href="/dashboard" style={{ color: "#00C48C", fontSize: "14px", textDecoration: "none" }}>

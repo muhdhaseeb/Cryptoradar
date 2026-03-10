@@ -44,38 +44,39 @@ export function useWatchlist(coinId?: string) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(coin),
       });
-      if (res.ok) {
-        // dedupe & only set true for this coin
-        setWatchlist((prev) =>
-          prev.some((item) => item.coinId === coin.coinId) ? prev : [...prev, coin]
-        );
-        if (coin.coinId === coinId) {
-          setIsWatching(true);
-        }
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Add watchlist failed: ${res.status} ${text}`);
       }
+      setWatchlist((prev) =>
+        prev.some((item) => item.coinId === coin.coinId) ? prev : [...prev, coin]
+      );
+      if (coin.coinId === coinId) setIsWatching(true);
     } catch (error) {
       console.error("Error adding to watchlist:", error);
+      throw error;
     } finally {
       setLoading(false);
     }
   }
 
-  async function removeFromWatchlist(removedCoinId: string) {
+  async function removeFromWatchlist(coinId: string) {
     setLoading(true);
     try {
       const res = await fetch("/api/watchlist", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ coinId: removedCoinId }),
+        body: JSON.stringify({ coinId }),
       });
-      if (res.ok) {
-        setWatchlist((prev) => prev.filter((item) => item.coinId !== removedCoinId));
-        if (removedCoinId === coinId) {
-          setIsWatching(false);
-        }
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Remove watchlist failed: ${res.status} ${text}`);
       }
+      setWatchlist((prev) => prev.filter((item) => item.coinId !== coinId));
+      setIsWatching(false);
     } catch (error) {
       console.error("Error removing from watchlist:", error);
+      throw error;
     } finally {
       setLoading(false);
     }
