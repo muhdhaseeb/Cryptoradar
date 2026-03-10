@@ -32,6 +32,7 @@ export interface CoinDetail {
   name: string;
   image: { large: string };
   description: { en: string };
+  market_cap_rank: number;  
   market_data: {
     current_price: { usd: number };
     price_change_percentage_24h: number;
@@ -51,7 +52,7 @@ export async function getTopCoins(limit: number = 50): Promise<Coin[]> {
   try {
     const response = await fetchWithTimeout(
       `${COINGECKO_BASE_URL}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${limit}&page=1&sparkline=true&price_change_percentage=24h`,
-      { next: { revalidate: 60 } }
+      { next: { revalidate: 300 } }
     );
     if (!response.ok) throw new Error(`CoinGecko API error: ${response.status}`);
     return await response.json();
@@ -71,7 +72,7 @@ export async function getCoinDetail(coinId: string): Promise<CoinDetail | null> 
   try {
     const response = await fetchWithTimeout(
       `${COINGECKO_BASE_URL}/coins/${safeId}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false`,
-      { next: { revalidate: 60 } }
+      { next: { revalidate: 300 } }
     );
     if (!response.ok) throw new Error(`CoinGecko API error: ${response.status}`);
     return await response.json();
@@ -89,7 +90,7 @@ export async function getCoinHistory(
   try {
     const response = await fetchWithTimeout(
       `${COINGECKO_BASE_URL}/coins/${safeId}/market_chart?vs_currency=usd&days=${days}`,
-      { next: { revalidate: 300 } }
+      { next: { revalidate: 600 } }
     );
     if (!response.ok) throw new Error(`CoinGecko API error: ${response.status}`);
     return await response.json();
@@ -105,7 +106,7 @@ export async function searchCoins(query: string): Promise<{
   try {
     const response = await fetchWithTimeout(
       `${COINGECKO_BASE_URL}/search?query=${encodeURIComponent(query)}`,
-      { next: { revalidate: 300 } }
+      { next: { revalidate: 600 } }
     );
     if (!response.ok) throw new Error(`CoinGecko API error: ${response.status}`);
     return await response.json();
@@ -122,7 +123,7 @@ export function formatNumber(num: number | null | undefined): string {
   return `$${num.toLocaleString("en-US")}`;
 }
 
-export function formatPrice(price: number | null): string {
+export function formatPrice(price: number | null | undefined): string {
   if (price === null || price === undefined) return "—";
   if (price < 0.01) return `$${price.toFixed(6)}`;
   if (price < 1) return `$${price.toFixed(4)}`;
@@ -132,7 +133,7 @@ export function formatPrice(price: number | null): string {
   })}`;
 }
 
-export function formatPercentage(percentage: number | null): string {
+export function formatPercentage(percentage: number | null | undefined): string {
   if (percentage === null || percentage === undefined) return "—";
   return `${percentage >= 0 ? "+" : ""}${percentage.toFixed(2)}%`;
 }

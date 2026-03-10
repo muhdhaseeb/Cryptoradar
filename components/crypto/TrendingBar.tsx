@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 interface TrendingCoin {
   item: {
     id: string;
@@ -49,37 +51,37 @@ export default function TrendingBar({ trending }: TrendingBarProps) {
         const isPositive = change >= 0;
 
         return (
-          <div
+          <Link
             key={t.item.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontSize: "12px",
-              flexShrink: 0,
-            }}
+            href={`/coins/${t.item.id}`}
+            style={{ textDecoration: "none" }}
           >
-            <span
+            <div
               style={{
-                fontFamily: "monospace",
-                color: "#555555",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                fontSize: "12px",
+                flexShrink: 0,
               }}
             >
-              {index + 1}
-            </span>
-            <span style={{ color: "#ffffff" }}>
-              {(t.item.symbol ?? "").toUpperCase()}
-            </span>
-            <span
-              style={{
-                fontFamily: "monospace",
-                color: isPositive ? "#00C48C" : "#ef4444",
-              }}
-            >
-              {isPositive ? "+" : ""}
-              {change.toFixed(1)}%
-            </span>
-          </div>
+              <span style={{ fontFamily: "monospace", color: "#555555" }}>
+                {index + 1}
+              </span>
+              <span style={{ color: "#ffffff" }}>
+                {(t.item.symbol ?? "").toUpperCase()}
+              </span>
+              <span
+                style={{
+                  fontFamily: "monospace",
+                  color: isPositive ? "#00C48C" : "#ef4444",
+                }}
+              >
+                {isPositive ? "+" : ""}
+                {change.toFixed(1)}%
+              </span>
+            </div>
+          </Link>
         );
       })}
     </div>

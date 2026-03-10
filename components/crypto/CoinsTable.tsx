@@ -3,6 +3,7 @@
 import { Coin, formatPrice, formatPercentage, formatNumber } from "@/lib/coingecko";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface CoinsTableProps {
   coins: Coin[];
@@ -38,6 +39,8 @@ function Sparkline({ prices, positive }: { prices: number[]; positive: boolean }
 }
 
 export default function CoinsTable({ coins }: CoinsTableProps) {
+  const router = useRouter();
+  
   return (
     <div
       style={{
@@ -133,6 +136,7 @@ export default function CoinsTable({ coins }: CoinsTableProps) {
               return (
                 <tr
                   key={coin.id}
+                  onClick={() => router.push(`/coins/${coin.id}`)}
                   style={{ cursor: "pointer" }}
                   onMouseEnter={(e) =>
                     (e.currentTarget.style.backgroundColor = "#1a1a1a")
