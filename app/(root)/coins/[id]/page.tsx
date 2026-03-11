@@ -2,6 +2,7 @@ import { getCoinDetail, getCoinHistory, formatPrice, formatPercentage, formatNum
 import CoinChart from "@/components/crypto/CoinChart";
 import CoinActions from "@/components/crypto/CoinActions";
 import { notFound } from "next/navigation";
+import AiSummary from "@/components/crypto/AiSummary";
 
 export default async function CoinPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -81,18 +82,7 @@ export default async function CoinPage({ params }: { params: Promise<{ id: strin
           </div>
 
           {/* AI Summary */}
-          <div style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "24px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A855F7" strokeWidth="2">
-                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-              </svg>
-              <span style={{ fontSize: "16px", fontWeight: 500 }}>AI Market Summary</span>
-              <span style={{ fontSize: "10px", color: "#94a3b8", marginLeft: "4px" }}>Powered by Gemini</span>
-            </div>
-            <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.6 }}>
-              AI summaries coming in Phase 7 — Gemini integration will analyze price action, on-chain data, and market sentiment for {coin.name}.
-            </p>
-          </div>
+          <AiSummary coinId={id} coinName={coin.name} />
         </div>
 
         {/* RIGHT COLUMN */}
