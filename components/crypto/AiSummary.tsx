@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface Props {
   coinId: string;
@@ -13,31 +13,37 @@ export default function AiSummary({ coinId, coinName }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  async function fetchSummary(force = false, signal?: AbortSignal) {
-    setLoading(true);
-    setError(false);
-    try {
-      const encoded = encodeURIComponent(coinId);
-      const url = force
-        ? `/api/ai-summary?coinId=${encoded}&force=true`
-        : `/api/ai-summary?coinId=${encoded}`;
-      const res = await fetch(url, signal ? { signal } : undefined);
-      if (!res.ok) throw new Error("Failed");
-      const data = await res.json();
-      setSummary(data.summary);
-      setGeneratedAt(data.generatedAt);
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const fetchSummary = useCallback(
+    async (force = false, signal?: AbortSignal) => {
+      setLoading(true);
+      setError(false);
+      try {
+        const encoded = encodeURIComponent(coinId);
+        const url = force
+          ? `/api/ai-summary?coinId=${encoded}&force=true`
+          : `/api/ai-summary?coinId=${encoded}`;
+        const res = await fetch(url, signal ? { signal } : undefined);
+        if (!res.ok) throw new Error("Failed");
+        const data = await res.json();
+        setSummary(data.summary);
+        setGeneratedAt(data.generatedAt);
+      } catch (err: any) {
+        // ignore aborts, otherwise flag error
+        if (err?.name !== "AbortError") {
+          setError(true);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [coinId]
+  );
 
   useEffect(() => {
     const controller = new AbortController();
     fetchSummary(false, controller.signal);
     return () => controller.abort();
-  }, [coinId]);
+  }, [fetchSummary]);
 
   return (
     <div style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "24px" }}>

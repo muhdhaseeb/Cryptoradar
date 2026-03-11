@@ -4,7 +4,12 @@ import AiSummary from "@/database/models/AiSummary";
 import { getCoinDetail } from "@/lib/coingecko";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+// validate API key early to avoid cryptic runtime errors
+const geminiKey = process.env.GEMINI_API_KEY;
+if (!geminiKey) {
+  throw new Error("Missing GEMINI_API_KEY environment variable");
+}
+const genAI = new GoogleGenerativeAI(geminiKey);
 const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
 
 export async function GET(request: NextRequest) {
@@ -13,9 +18,13 @@ export async function GET(request: NextRequest) {
 
   await connectToDatabase();
 
-  // Return cached summary if fresh
+  // read force flag from query string; treat any truthy string as bypass
+  const forceParam = request.nextUrl.searchParams.get("force");
+  const force = forceParam === "true" || forceParam === "1";
+
+  // Return cached summary if fresh and not forcing regeneration
   const cached = await AiSummary.findOne({ coinId });
-  if (cached && Date.now() - cached.generatedAt.getTime() < CACHE_DURATION_MS) {
+  if (!force && cached && Date.now() - cached.generatedAt.getTime() < CACHE_DURATION_MS) {
     return NextResponse.json({ summary: cached.summary, generatedAt: cached.generatedAt });
   }
 
@@ -73,12 +82,17 @@ Keep it under 120 words. Do not use bullet points. Do not start with "${coin.nam
     // keep one timestamp value so cache/response stay in sync
     const generatedAt = new Date();
 
-    // Upsert cache
-    await AiSummary.findOneAndUpdate(
-      { coinId },
-      { summary, generatedAt },
-      { upsert: true, new: true }
-    );
+    // Upsert cache (don't block response if the database write fails)
+    try {
+      await AiSummary.findOneAndUpdate(
+        { coinId },
+        { summary, generatedAt },
+        { upsert: true, new: true }
+      );
+    } catch (dbErr) {
+      console.error("Failed to upsert AI summary cache", { coinId, error: dbErr });
+      // could also use processLogger.error if available
+    }
 
     return NextResponse.json({ summary, generatedAt });
   } catch (err) {

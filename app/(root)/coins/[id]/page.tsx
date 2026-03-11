@@ -3,6 +3,7 @@ import CoinChart from "@/components/crypto/CoinChart";
 import CoinActions from "@/components/crypto/CoinActions";
 import { notFound } from "next/navigation";
 import AiSummary from "@/components/crypto/AiSummary";
+import OrderBook from "@/components/crypto/OrderBook";
 
 export default async function CoinPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -81,6 +82,24 @@ export default async function CoinPage({ params }: { params: Promise<{ id: strin
             <CoinChart coinId={id} initialHistory={chartHistory} />
           </div>
 
+          {/* About */}
+          {coin.description?.en && (
+            <div style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "24px", marginBottom: "24px" }}>
+              <h2 style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#888888", marginBottom: "12px" }}>
+                About {coin.name}
+              </h2>
+              <p style={{ color: "#94a3b8", fontSize: "13px", lineHeight: 1.7, margin: 0 }}
+                dangerouslySetInnerHTML={{
+                  __html: coin.description.en
+                    .split(". ")
+                    .slice(0, 3)
+                    .join(". ")
+                    .replace(/<a /g, '<a style="color:#00C48C;text-decoration:none;" ')
+                }}
+              />
+            </div>
+          )}
+
           {/* AI Summary */}
           <AiSummary coinId={id} coinName={coin.name} />
         </div>
@@ -92,9 +111,10 @@ export default async function CoinPage({ params }: { params: Promise<{ id: strin
 
           {/* Market Stats */}
           <div style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "24px", marginTop: "30px" }}>
-            <h2 style={{ fontSize: "16px", fontWeight: 500, marginBottom: "20px" }}>Market Stats</h2>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "24px", marginBottom: "24px" }}>
+            <h2 style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#888888", marginBottom: "20px" }}>
+              Market Statistics
+            </h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "20px" }}>
               {[
                 { label: "Market Cap", value: formatNumber(coin.market_data?.market_cap?.usd ?? null) },
                 { label: "24h Volume", value: formatNumber(coin.market_data?.total_volume?.usd ?? null) },
@@ -106,37 +126,31 @@ export default async function CoinPage({ params }: { params: Promise<{ id: strin
                   })(),
                 },
                 {
-                  label: "24h High / Low",
-                  value: `${formatPrice(coin.market_data?.high_24h?.usd ?? null)} / ${formatPrice(
-                    coin.market_data?.low_24h?.usd ?? null
-                  )}`,
-                  small: true,
+                  label: "Max Supply",
+                  value: (() => {
+                    const max = coin.market_data?.max_supply ?? null;
+                    return max !== null ? `${(max / 1_000_000).toFixed(2)}M ${coin.symbol.toUpperCase()}` : "∞";
+                  })(),
                 },
                 { label: "All Time High", value: formatPrice(coin.market_data?.ath?.usd ?? null) },
-                {
-                  label: "ATH Change",
-                  value: formatPercentage(coin.market_data?.ath_change_percentage?.usd ?? null),
-                },
+                { label: "ATH Change", value: formatPercentage(coin.market_data?.ath_change_percentage?.usd ?? null) },
+                { label: "24h High", value: formatPrice(coin.market_data?.high_24h?.usd ?? null) },
+                { label: "24h Low", value: formatPrice(coin.market_data?.low_24h?.usd ?? null) },
               ].map((stat) => (
                 <div key={stat.label} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8" }}>
+                  <span style={{ fontSize: "11px", color: "#888888", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                     {stat.label}
                   </span>
-                  <span style={{ fontSize: stat.small ? "14px" : "18px", fontWeight: 500, fontFamily: "monospace" }}>
+                  <span style={{ fontSize: "16px", fontWeight: 500, fontFamily: "monospace" }}>
                     {stat.value}
                   </span>
                 </div>
               ))}
             </div>
-
-            <div style={{ height: "1px", background: "rgba(255,255,255,0.1)", margin: "24px 0" }} />
-
-            {/* Recent News placeholder */}
-            <h2 style={{ fontSize: "16px", fontWeight: 500, marginBottom: "16px" }}>Recent News</h2>
-            <p style={{ color: "#94a3b8", fontSize: "13px" }}>
-              News feed coming soon — will pull live articles related to {coin.name}.
-            </p>
           </div>
+
+          {/* Order Book */}
+          <OrderBook currentPrice={price} />
         </div>
       </div>
     </div>
