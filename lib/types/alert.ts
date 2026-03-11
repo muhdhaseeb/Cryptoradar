@@ -5,6 +5,6 @@ export type Alert = {
   condition: "above" | "below";
   targetPrice: number;
   isActive: boolean;
-  triggeredAt: string | null;
+  triggeredAt?: string | null;
   createdAt: string;
 };

@@ -34,7 +34,7 @@ export default async function AlertsPage() {
   return (
     <div style={{
         display: "grid",
-        gridTemplateColumns: "minmax(260px,380px) 1fr minmax(200px,320px)",
+        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
         gap: "16px",
         padding: "16px",
         height: "calc(100vh - 64px)",
