@@ -43,6 +43,7 @@ export interface CoinDetail {
     high_24h: { usd: number };
     low_24h: { usd: number };
     circulating_supply: number;
+    max_supply: number | null;
     ath: { usd: number };
     ath_change_percentage: { usd: number };
   };
