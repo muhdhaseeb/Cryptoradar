@@ -2,7 +2,7 @@ import { inngest } from "./client";
 import { connectToDatabase } from "@/lib/mongodb";
 import Alert from "@/database/models/Alert";
 import User from "@/database/models/User";
-import { getTopCoins } from "@/lib/coingecko";
+import { getTopCoins, getCoinDetail } from "@/lib/coingecko";
 import { sendAlertEmail } from "@/lib/email";
 
 export const checkPriceAlerts = inngest.createFunction(
@@ -15,11 +15,27 @@ export const checkPriceAlerts = inngest.createFunction(
     const alerts = await Alert.find({ isActive: true, triggeredAt: null });
     if (alerts.length === 0) return { message: "No active alerts" };
 
-    // Get live prices for all relevant coins
+    // Get live prices for all relevant coins. start with top coins
     const coins = await getTopCoins(250);
     const priceMap = new Map(coins.map((c) => [c.id, c.current_price]));
 
+    // ensure prices for any alert coinIds not in top list
+    const alertIds = [...new Set(alerts.map((a) => a.coinId))];
+    for (const id of alertIds) {
+      if (priceMap.get(id) === undefined) {
+        const detail = await getCoinDetail(id);
+        if (detail && detail.market_data?.current_price?.usd !== undefined) {
+          priceMap.set(id, detail.market_data.current_price.usd);
+        }
+      }
+    }
+
     let triggered = 0;
+
+    // prefetch users to avoid N+1
+    const userIds = [...new Set(alerts.map((a) => a.userId))];
+    const users = await User.find({ clerkId: { $in: userIds } });
+    const usersMap = new Map(users.map((u) => [u.clerkId, u]));
 
     for (const alert of alerts) {
       const currentPrice = priceMap.get(alert.coinId);
@@ -32,10 +48,12 @@ export const checkPriceAlerts = inngest.createFunction(
       if (shouldTrigger) {
         try {
           // attempt to send email first
-          const user = await User.findOne({ clerkId: alert.userId });
+          // we will replace N+1 later by prefetching users
+          const user = usersMap.get(alert.userId);
           if (user?.email) {
             await sendAlertEmail({
               to: user.email,
+              coinId: alert.coinId,
               coinName: alert.coinName,
               coinSymbol: alert.coinSymbol,
               condition: alert.condition,

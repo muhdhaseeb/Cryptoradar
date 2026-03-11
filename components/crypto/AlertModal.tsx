@@ -42,15 +42,19 @@ export default function AlertModal({ coinId, coinName, coinSymbol, currentPrice,
       });
 
       if (!res.ok) {
-        // try to parse a JSON error, fall back to text or status
+        // read full body once and try JSON.parse, else use as text
         let message = "Failed to create alert";
-        try {
-          const data = await res.json();
-          if (data && data.error) message = data.error;
-        } catch (jsonErr) {
-          const text = await res.text().catch(() => "");
-          if (text) message = text;
-          else message = res.statusText || message;
+        const bodyText = await res.clone().text().catch(() => "");
+        if (bodyText) {
+          try {
+            const data = JSON.parse(bodyText);
+            if (data && data.error) message = data.error;
+            else message = bodyText;
+          } catch {
+            message = bodyText;
+          }
+        } else if (res.statusText) {
+          message = res.statusText;
         }
         throw new Error(message);
       }
@@ -82,7 +86,7 @@ export default function AlertModal({ coinId, coinName, coinSymbol, currentPrice,
               {coinName} ({coinSymbol}) — Current: ${currentPrice.toLocaleString("en-US")}
             </p>
           </div>
-          <button onClick={onClose} style={{ background: "transparent", border: "none", color: "#888888", cursor: "pointer", fontSize: "20px", lineHeight: 1 }}>×</button>
+          <button aria-label="Close dialog" title="Close" onClick={onClose} style={{ background: "transparent", border: "none", color: "#888888", cursor: "pointer", fontSize: "20px", lineHeight: 1 }}>×</button>
         </div>
 
         {/* Condition */}

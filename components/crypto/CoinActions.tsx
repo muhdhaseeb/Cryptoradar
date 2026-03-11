@@ -19,8 +19,6 @@ export default function CoinActions({ coinId, coinName, coinSymbol, coinImage, c
   const [error, setError] = useState<string | null>(null);
 
   async function handleWatchlist() {
-    // capture current state in case we need to roll back
-    const wasWatching = isWatching;
     setError(null);
 
     try {
@@ -29,21 +27,11 @@ export default function CoinActions({ coinId, coinName, coinSymbol, coinImage, c
       } else {
         await addToWatchlist({ coinId, coinName, coinSymbol, image: coinImage });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // show a user-visible error
       const message = err instanceof Error ? err.message : String(err);
       setError(message || "Something went wrong");
-
-      // rollback optimistic UI to previous state using captured value
-      try {
-        if (wasWatching) {
-          await addToWatchlist({ coinId, coinName, coinSymbol, image: coinImage });
-        } else {
-          await removeFromWatchlist(coinId);
-        }
-      } catch (rollbackErr) {
-        console.error("Rollback failed:", rollbackErr);
-      }
+      // no rollback; hook updates state only on success
     }
   }
 

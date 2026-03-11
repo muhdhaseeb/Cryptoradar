@@ -5,30 +5,21 @@ import Alert from "@/database/models/Alert";
 import AlertsTable from "@/components/crypto/AlertsTable";
 import Link from "next/link";
 
-interface AlertDoc {
-  _id: string;
-  coinName: string;
-  coinSymbol: string;
-  condition: "above" | "below";
-  targetPrice: number;
-  isActive: boolean;
-  triggeredAt: string | null;
-  createdAt: string;
-}
+import type { Alert as AlertType } from "@/lib/types/alert";
 
 export default async function AlertsPage() {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
 
-  let alerts: AlertDoc[] = [];
-  let activeAlerts: AlertDoc[] = [];
-  let triggeredAlerts: AlertDoc[] = [];
+  let alerts: AlertType[] = [];
+  let activeAlerts: AlertType[] = [];
+  let triggeredAlerts: AlertType[] = [];
 
   try {
     await connectToDatabase();
 
     const rawAlerts = await Alert.find({ userId }).sort({ createdAt: -1 }).lean();
-    alerts = JSON.parse(JSON.stringify(rawAlerts)) as AlertDoc[];
+    alerts = JSON.parse(JSON.stringify(rawAlerts)) as AlertType[];
     activeAlerts = alerts.filter((a) => a.isActive && !a.triggeredAt);
     triggeredAlerts = alerts.filter((a) => a.triggeredAt);
   } catch (err) {

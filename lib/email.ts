@@ -40,6 +40,7 @@ function escapeHtml(str: string) {
 
 export async function sendAlertEmail({
   to,
+  coinId,
   coinName,
   coinSymbol,
   condition,
@@ -47,6 +48,7 @@ export async function sendAlertEmail({
   currentPrice,
 }: {
   to: string;
+  coinId: string;
   coinName: string;
   coinSymbol: string;
   condition: "above" | "below";
@@ -92,7 +94,7 @@ export async function sendAlertEmail({
       </div>
 
       <a href="${process.env.NEXT_PUBLIC_BASE_URL}/coins/${encodeURIComponent(
-        coinName.toLowerCase()
+        coinId
       )}"
         style="display: block; background: #3b82f6; color: white; text-align: center; padding: 12px; border-radius: 4px; text-decoration: none; font-weight: 600; font-size: 14px;">
         View ${escapeHtml(coinSymbol)} on CryptoRadar →

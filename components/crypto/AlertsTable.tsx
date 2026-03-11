@@ -3,18 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-interface Alert {
-  _id: string;
-  coinName: string;
-  coinSymbol: string;
-  condition: "above" | "below";
-  targetPrice: number;
-  isActive: boolean;
-  triggeredAt: string | null;
-  createdAt: string;
-}
+import type { Alert as AlertType } from "@/lib/types/alert";
 
-export default function AlertsTable({ alerts }: { alerts: Alert[] }) {
+export default function AlertsTable({ alerts }: { alerts: AlertType[] }) {
   const [deleting, setDeleting] = useState<string | null>(null);
   const router = useRouter();
 
@@ -30,9 +21,17 @@ export default function AlertsTable({ alerts }: { alerts: Alert[] }) {
       if (!res.ok) {
         let errMsg = `Delete failed (${res.status})`;
         try {
-          const data = await res.json();
-          if (data && data.error) errMsg = data.error;
-        } catch {}
+          const text = await res.clone().text();
+          try {
+            const data = JSON.parse(text);
+            if (data && data.error) errMsg = data.error;
+            else errMsg = text || errMsg;
+          } catch {
+            if (text) errMsg = text;
+          }
+        } catch (parseErr) {
+          console.error("Error parsing delete response:", parseErr);
+        }
         console.error(errMsg);
         return;
       }

@@ -9,13 +9,28 @@ const isNonEmptyString = (v: unknown): v is string =>
   typeof v === "string" && v.trim().length > 0;
 
 // GET — fetch user's alerts
-export async function GET() {
+export async function GET(request: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const url = new URL(request.url);
+  let page = parseInt(url.searchParams.get("page") || "1", 10);
+  let limit = parseInt(url.searchParams.get("limit") || "20", 10);
+  if (isNaN(page) || page < 1) page = 1;
+  if (isNaN(limit) || limit < 1) limit = 20;
+  const maxLimit = 100;
+  limit = Math.min(limit, maxLimit);
+  const skip = (page - 1) * limit;
+
   await connectToDatabase();
-  const alerts = await Alert.find({ userId }).sort({ createdAt: -1 }).lean();
-  return NextResponse.json(alerts);
+  const total = await Alert.countDocuments({ userId });
+  const alerts = await Alert.find({ userId })
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
+
+  return NextResponse.json({ alerts, page, limit, total });
 }
 
 // POST — create alert
