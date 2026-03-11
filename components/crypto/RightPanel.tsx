@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Coin, formatPercentage } from "@/lib/coingecko";
+import DashboardAiSummary from "./DashboardAiSummary";
 
 interface RightPanelProps {
   coins: Coin[];
@@ -24,77 +25,7 @@ export default function RightPanel({ coins }: RightPanelProps) {
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
 
       {/* AI Market Summary */}
-      <div
-        style={{
-          backgroundColor: "#111111",
-          border: "1px solid #222222",
-          borderRadius: "4px",
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            padding: "16px",
-            borderBottom: "1px solid #222222",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#3b82f6"
-            strokeWidth="2"
-          >
-            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-          </svg>
-          <span
-            style={{
-              fontSize: "11px",
-              fontWeight: 600,
-              color: "#888888",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}
-          >
-            AI Market Summary
-          </span>
-        </div>
-
-        {/* Body */}
-        <div style={{ padding: "16px" }}>
-          <p
-            style={{
-              fontSize: "13px",
-              lineHeight: 1.6,
-              color: "#888888",
-            }}
-          >
-            Market data loaded. AI summaries powered by{" "}
-            <span style={{ color: "#ffffff" }}>Gemini</span> will appear here
-            in Phase 7. Track{" "}
-            <span style={{ color: "#ffffff" }}>
-              {coins[0]?.name ?? "Bitcoin"}
-            </span>{" "}
-            at{" "}
-            <span
-              style={{
-                color:
-                  (coins[0]?.price_change_percentage_24h ?? 0) >= 0
-                    ? "#00C48C"
-                    : "#ef4444",
-                fontFamily: "monospace",
-              }}
-            >
-              {formatPercentage(coins[0]?.price_change_percentage_24h ?? 0)}
-            </span>{" "}
-            today.
-          </p>
-        </div>
-      </div>
+      <DashboardAiSummary />
 
       {/* My Watchlist */}
       <div
