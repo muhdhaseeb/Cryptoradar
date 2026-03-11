@@ -66,7 +66,7 @@ Write in a professional but accessible tone. Focus on:
 Keep it under 120 words. Do not use bullet points. Do not start with "${coin.name} is".`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
     const summary = result.response.text().trim();
 
