@@ -98,7 +98,7 @@ export default async function CoinPage({ params }: { params: Promise<{ id: strin
         {/* RIGHT COLUMN */}
         <div style={{ marginTop: "65px" }}>
           {/* Action Buttons */}
-          <CoinActions coinId={id} coinName={coin.name} coinSymbol={coin.symbol.toUpperCase()} coinImage={coin.image.large} />
+          <CoinActions coinId={id} coinName={coin.name} coinSymbol={coin.symbol.toUpperCase()} coinImage={coin.image.large} currentPrice={price} />
 
           {/* Market Stats */}
           <div style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "24px", marginTop: "30px" }}>
