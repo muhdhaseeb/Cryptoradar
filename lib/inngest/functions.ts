@@ -46,9 +46,15 @@ export const checkPriceAlerts = inngest.createFunction(
         (alert.condition === "below" && currentPrice <= alert.targetPrice);
 
       if (shouldTrigger) {
+        // Atomically claim the alert — prevents duplicate emails if two runs overlap
+        const claimed = await Alert.findOneAndUpdate(
+          { _id: alert._id, isActive: true, triggeredAt: null },
+          { isActive: false, triggeredAt: new Date() },
+          { new: true }
+        );
+        if (!claimed) continue; // another execution already claimed it
+
         try {
-          // attempt to send email first
-          // we will replace N+1 later by prefetching users
           const user = usersMap.get(alert.userId);
           if (user?.email) {
             await sendAlertEmail({
@@ -60,19 +66,12 @@ export const checkPriceAlerts = inngest.createFunction(
               targetPrice: alert.targetPrice,
               currentPrice,
             });
+          } else {
+            console.error(`No email found for userId: ${alert.userId}`);
           }
-
-          // only persist deactivation after email success
-          alert.isActive = false;
-          alert.triggeredAt = new Date();
-          await alert.save();
-
           triggered++;
         } catch (err) {
           console.error("Error processing alert", alert._id, err);
-          // if we saved early and need rollback, we could re-activate here, but
-          // current flow delays persistence until after email success so nothing to
-          // rollback
         }
       }
     }

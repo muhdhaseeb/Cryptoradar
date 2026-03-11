@@ -21,7 +21,9 @@ export default async function AlertsPage() {
     const rawAlerts = await Alert.find({ userId }).sort({ createdAt: -1 }).lean();
     alerts = JSON.parse(JSON.stringify(rawAlerts)) as AlertType[];
     activeAlerts = alerts.filter((a) => a.isActive && !a.triggeredAt);
-    triggeredAlerts = alerts.filter((a) => a.triggeredAt);
+    triggeredAlerts = alerts
+    .filter((a) => a.triggeredAt)
+    .sort((a, b) => new Date(b.triggeredAt!).getTime() - new Date(a.triggeredAt!).getTime());
   } catch (err) {
     console.error("Failed to load alerts:", err);
     return (
@@ -36,7 +38,8 @@ export default async function AlertsPage() {
         gap: "16px",
         padding: "16px",
         height: "calc(100vh - 64px)",
-        overflow: "hidden",
+        overflowX: "auto",
+        overflowY: "auto",
       }}>
 
       {/* Left — Create Alert + Stats */}
