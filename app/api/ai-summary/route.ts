@@ -32,6 +32,22 @@ export async function GET(request: NextRequest) {
   const ath = coin.market_data?.ath?.usd ?? 0;
   const athChange = coin.market_data?.ath_change_percentage?.usd ?? 0;
 
+  // basic validation: we at least need a non-zero price to generate anything useful
+  if (!coin.market_data || price === 0) {
+    if (cached) {
+      // if we already have any cached summary (fresh or stale), return it instead
+      return NextResponse.json({
+        summary: cached.summary,
+        generatedAt: cached.generatedAt,
+        warning: "Using cached summary because market data is unavailable or incomplete",
+      });
+    }
+    return NextResponse.json(
+      { error: "Insufficient market data to generate AI summary" },
+      { status: 400 }
+    );
+  }
+
   const prompt = `You are a professional crypto market analyst. Write a concise 3-paragraph market summary for ${coin.name} (${coin.symbol.toUpperCase()}) based on the following data:
 
 - Current Price: $${price.toLocaleString("en-US")}
@@ -50,7 +66,7 @@ Write in a professional but accessible tone. Focus on:
 Keep it under 120 words. Do not use bullet points. Do not start with "${coin.name} is".`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     const result = await model.generateContent(prompt);
     const summary = result.response.text().trim();
 
