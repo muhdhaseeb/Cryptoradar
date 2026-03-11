@@ -23,13 +23,14 @@ export async function GET(request: NextRequest) {
   const coin = await getCoinDetail(coinId);
   if (!coin) return NextResponse.json({ error: "Coin not found" }, { status: 404 });
 
-  const price = coin.market_data.current_price.usd;
-  const change24h = coin.market_data.price_change_percentage_24h ?? 0;
-  const change7d = coin.market_data.price_change_percentage_7d ?? 0;
-  const marketCap = coin.market_data.market_cap.usd;
-  const volume = coin.market_data.total_volume.usd;
-  const ath = coin.market_data.ath.usd;
-  const athChange = coin.market_data.ath_change_percentage.usd ?? 0;
+  // safely access nested market data with optional chaining and sensible defaults
+  const price = coin.market_data?.current_price?.usd ?? 0;
+  const change24h = coin.market_data?.price_change_percentage_24h ?? 0;
+  const change7d = coin.market_data?.price_change_percentage_7d ?? 0;
+  const marketCap = coin.market_data?.market_cap?.usd ?? 0;
+  const volume = coin.market_data?.total_volume?.usd ?? 0;
+  const ath = coin.market_data?.ath?.usd ?? 0;
+  const athChange = coin.market_data?.ath_change_percentage?.usd ?? 0;
 
   const prompt = `You are a professional crypto market analyst. Write a concise 3-paragraph market summary for ${coin.name} (${coin.symbol.toUpperCase()}) based on the following data:
 
@@ -49,18 +50,21 @@ Write in a professional but accessible tone. Focus on:
 Keep it under 120 words. Do not use bullet points. Do not start with "${coin.name} is".`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
     const result = await model.generateContent(prompt);
     const summary = result.response.text().trim();
+
+    // keep one timestamp value so cache/response stay in sync
+    const generatedAt = new Date();
 
     // Upsert cache
     await AiSummary.findOneAndUpdate(
       { coinId },
-      { summary, generatedAt: new Date() },
+      { summary, generatedAt },
       { upsert: true, new: true }
     );
 
-    return NextResponse.json({ summary, generatedAt: new Date() });
+    return NextResponse.json({ summary, generatedAt });
   } catch (err) {
     console.error("Gemini error:", err);
     return NextResponse.json({ error: "Failed to generate summary" }, { status: 500 });

@@ -13,14 +13,15 @@ export default function AiSummary({ coinId, coinName }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  async function fetchSummary(force = false) {
+  async function fetchSummary(force = false, signal?: AbortSignal) {
     setLoading(true);
     setError(false);
     try {
+      const encoded = encodeURIComponent(coinId);
       const url = force
-        ? `/api/ai-summary?coinId=${coinId}&force=true`
-        : `/api/ai-summary?coinId=${coinId}`;
-      const res = await fetch(url);
+        ? `/api/ai-summary?coinId=${encoded}&force=true`
+        : `/api/ai-summary?coinId=${encoded}`;
+      const res = await fetch(url, signal ? { signal } : undefined);
       if (!res.ok) throw new Error("Failed");
       const data = await res.json();
       setSummary(data.summary);
@@ -33,7 +34,9 @@ export default function AiSummary({ coinId, coinName }: Props) {
   }
 
   useEffect(() => {
-    fetchSummary();
+    const controller = new AbortController();
+    fetchSummary(false, controller.signal);
+    return () => controller.abort();
   }, [coinId]);
 
   return (
@@ -55,8 +58,18 @@ export default function AiSummary({ coinId, coinName }: Props) {
           disabled={loading}
           title="Regenerate summary"
           style={{ background: "transparent", border: "1px solid #222222", color: "#888888", padding: "4px 10px", borderRadius: "4px", fontSize: "11px", cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px", opacity: loading ? 0.5 : 1, transition: "all 0.2s" }}
-          onMouseEnter={(e) => { if (!loading) e.currentTarget.style.borderColor = "#A855F7"; e.currentTarget.style.color = "#A855F7"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#222222"; e.currentTarget.style.color = "#888888"; }}
+          onMouseEnter={(e) => {
+            if (!loading) {
+              e.currentTarget.style.borderColor = "#A855F7";
+              e.currentTarget.style.color = "#A855F7";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!loading) {
+              e.currentTarget.style.borderColor = "#222222";
+              e.currentTarget.style.color = "#888888";
+            }
+          }}
         >
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M23 4v6h-6M1 20v-6h6" strokeLinecap="round" strokeLinejoin="round" />
