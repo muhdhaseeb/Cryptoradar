@@ -21,13 +21,38 @@ function escapeHtml(str: string) {
   });
 }
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.NODEMAILER_EMAIL,
-    pass: process.env.NODEMAILER_PASSWORD,
-  },
-});
+let cachedTransporter: nodemailer.Transporter | null = null;
+
+// escape values used inside HTML attributes (hrefs etc.)
+function escapeAttribute(str: string) {
+  return str.replace(/[&"<>]/g, (c) => {
+    switch (c) {
+      case "&":
+        return "&amp;";
+      case '"':
+        return "&quot;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      default:
+        return c;
+    }
+  });
+}
+function getTransporter() {
+  if (cachedTransporter) return cachedTransporter;
+  const user = process.env.NODEMAILER_EMAIL;
+  const pass = process.env.NODEMAILER_PASSWORD;
+  if (!user || !pass) {
+    throw new Error("NODEMAILER_EMAIL and NODEMAILER_PASSWORD must be defined");
+  }
+  cachedTransporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user, pass },
+  });
+  return cachedTransporter;
+}
 
 export async function sendDailyDigestEmail({
   to,
@@ -67,6 +92,8 @@ export async function sendDailyDigestEmail({
     console.error("NEXT_PUBLIC_BASE_URL is not a valid URL", baseUrl);
     throw new Error("Invalid NEXT_PUBLIC_BASE_URL");
   }
+  // attribute-safe version of baseUrl
+  const safeBase = escapeAttribute(baseUrl);
 
   const html = `
     <div style="font-family: Inter, sans-serif; background: #0a0a0a; color: #ffffff; padding: 32px; max-width: 520px; margin: 0 auto; border-radius: 8px;">
@@ -94,7 +121,7 @@ export async function sendDailyDigestEmail({
         </table>
       </div>
 
-      <a href="${baseUrl}/dashboard"
+      <a href="${safeBase}/dashboard"
         style="display: block; background: #3b82f6; color: white; text-align: center; padding: 12px; border-radius: 4px; text-decoration: none; font-weight: 600; font-size: 14px; margin-bottom: 24px;">
         Open CryptoRadar Dashboard →
       </a>
@@ -102,13 +129,14 @@ export async function sendDailyDigestEmail({
       <p style="font-size: 11px; color: #555555; text-align: center;">
         You're receiving this because you enabled daily digest emails in CryptoRadar.
         <br/>
-        <a href="${baseUrl}/settings" style="color: #3b82f6;">Manage notifications</a>
+        <a href="${safeBase}/settings" style="color: #3b82f6;">Manage notifications</a>
       </p>
     </div>
   `;
 
   const subject = `📊 CryptoRadar Daily Digest — ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
   try {
+    const transporter = getTransporter();
     await transporter.sendMail({
       from: `CryptoRadar <${process.env.NODEMAILER_EMAIL}>`,
       to,
@@ -116,7 +144,16 @@ export async function sendDailyDigestEmail({
       html,
     });
   } catch (err) {
-    console.error("Error sending daily digest email", { to, subject, error: err });
+    // avoid logging raw email address; hash it for diagnostics
+    let toId: string;
+    try {
+      const crypto = await import("crypto");
+      toId = crypto.createHash("sha256").update(to).digest("hex").slice(0, 8);
+    } catch {
+      // fallback to simple masking if crypto import fails
+      toId = to.replace(/(.).+(@.+)/, "$1***$2");
+    }
+    console.error("Error sending daily digest email", { toId, subject, error: err });
     // rethrow so callers can increment sent counter appropriately or handle
     throw err;
   }

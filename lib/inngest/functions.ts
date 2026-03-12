@@ -6,6 +6,7 @@ import Watchlist from "@/database/models/Watchlist";
 import { getTopCoins, getCoinDetail } from "@/lib/coingecko";
 import { sendAlertEmail } from "@/lib/email";
 import { sendDailyDigestEmail } from "@/lib/emailDigest";
+import { Document, UpdateOneModel } from "mongodb";
 
 // ─── Job 1: Check Price Alerts every 5 minutes ───────────────────────────────
 export const checkPriceAlerts = inngest.createFunction(
@@ -34,7 +35,7 @@ export const checkPriceAlerts = inngest.createFunction(
     const users = await User.find({ clerkId: { $in: userIds } });
     const usersMap = new Map(users.map((u) => [u.clerkId, u]));
 
-    let triggered = 0;
+    let triggered = 0; // count of alerts for which an email was successfully sent
 
     for (const alert of alerts) {
       const currentPrice = priceMap.get(alert.coinId);
@@ -64,10 +65,12 @@ export const checkPriceAlerts = inngest.createFunction(
               targetPrice: alert.targetPrice,
               currentPrice,
             });
+            // only count as triggered when email goes out successfully
+            triggered++;
           } else {
             console.error(`No email found for userId: ${alert.userId}`);
+            // do not increment triggered in this branch
           }
-          triggered++;
         } catch (err) {
           console.error("Error processing alert", alert._id, err);
         }
@@ -94,18 +97,47 @@ export const sendDailyDigest = inngest.createFunction(
     if (coins.length === 0) return { message: "No coin data available" };
 
     let sent = 0;
-    for (const user of users) {
-      if (!user?.email) {
-        // skip users without an email address, similar to checkPriceAlerts
-        console.error("Skipping digest for user with no email", user?._id || user);
-        continue;
+
+    // simple exponential-backoff retry helper
+    async function sendWithRetries(email: string) {
+      const maxAttempts = 3;
+      let attempt = 0;
+      while (attempt < maxAttempts) {
+        try {
+          await sendDailyDigestEmail({ to: email, coins });
+          return;
+        } catch (err) {
+          attempt++;
+          if (attempt >= maxAttempts) {
+            throw err;
+          }
+          const backoff = Math.pow(2, attempt) * 100; // 200, 400, ...ms
+          await new Promise((r) => setTimeout(r, backoff));
+        }
       }
-      try {
-        await sendDailyDigestEmail({ to: user.email, coins });
-        sent++;
-      } catch (err) {
-        console.error("Error sending digest to", user.email, err);
+    }
+
+    const batchSize = 20;
+    const pauseBetweenBatches = 500; // ms
+
+    for (let i = 0; i < users.length; i += batchSize) {
+      const batch = users.slice(i, i + batchSize);
+      for (const user of batch) {
+        if (!user?.email) {
+          console.error("Skipping digest for user with no email", user?._id || user);
+          continue;
+        }
+        try {
+          await sendWithRetries(user.email);
+          sent++;
+        } catch (err) {
+          console.error("Error sending digest to", user.email, err);
+        }
+        // small intra-batch pause to avoid throttle
+        await new Promise((r) => setTimeout(r, 50));
       }
+      // pause between batches
+      await new Promise((r) => setTimeout(r, pauseBetweenBatches));
     }
 
     return { message: `Daily digest sent to ${sent}/${users.length} users` };
@@ -113,11 +145,22 @@ export const sendDailyDigest = inngest.createFunction(
 );
 
 // ─── Job 3: Cache watchlist prices every 10 minutes ──────────────────────────
+
+// keep a local cache of the mongoose connection so we only call
+// connectToDatabase once per module load. connectToDatabase already
+// takes care of global caching but this satisfies the explicit request.
+let cachedMongooseConn: typeof import("mongoose") | null = null;
+async function getDbConnection() {
+  if (cachedMongooseConn) return cachedMongooseConn;
+  cachedMongooseConn = await connectToDatabase();
+  return cachedMongooseConn;
+}
+
 export const cacheWatchlistPrices = inngest.createFunction(
   { id: "cache-watchlist-prices", name: "Cache Watchlist Prices" },
   { cron: "*/10 * * * *" },
   async () => {
-    await connectToDatabase();
+    await getDbConnection();
 
     // Get all unique coin IDs across all watchlists
     const watchlistItems = await Watchlist.find({}).lean();
@@ -146,14 +189,17 @@ export const cacheWatchlistPrices = inngest.createFunction(
 
     // persist the map entries into a cache collection with a short TTL
     try {
-      const mongooseConn = await connectToDatabase();
+      const mongooseConn = await getDbConnection();
+      if (!mongooseConn || !mongooseConn.connection || !mongooseConn.connection.db) {
+        throw new Error("Database connection not ready when caching watchlist prices");
+      }
       const db = mongooseConn.connection.db;
       const cacheCol = db.collection("watchlist_price_cache");
       const now = new Date();
       const ttlSeconds = 10 * 60; // 10 minutes
       const expireAt = new Date(now.getTime() + ttlSeconds * 1000);
 
-      const bulkOps: any[] = [];
+      const bulkOps: UpdateOneModel<Document>[] = [];
       for (const [coinId, price] of priceMap.entries()) {
         bulkOps.push({
           updateOne: {
@@ -171,11 +217,22 @@ export const cacheWatchlistPrices = inngest.createFunction(
       }
       if (bulkOps.length) {
         await cacheCol.bulkWrite(bulkOps, { ordered: false });
-        // ensure there is a TTL index on expireAt; harmless if already exists
-        await cacheCol.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 });
+        // avoid recreating the index on every run: only create if missing
+        const existing = await cacheCol.indexes();
+        if (!existing.some((ix) => ix.name === "expireAt_1")) {
+          await cacheCol.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 });
+        }
       }
     } catch (err) {
-      console.error("Error caching watchlist prices", err);
+      console.error("Error caching watchlist prices", {
+        error: err,
+        total: uniqueCoinIds.length,
+        fetched,
+      });
+      // propagate so the job is marked failed
+      throw new Error(
+        `Failed to cache prices for ${uniqueCoinIds.length} coins (${fetched} fetched): ${err}`
+      );
     }
 
     return {
