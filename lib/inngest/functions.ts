@@ -6,7 +6,7 @@ import Watchlist from "@/database/models/Watchlist";
 import { getTopCoins, getCoinDetail } from "@/lib/coingecko";
 import { sendAlertEmail } from "@/lib/email";
 import { sendDailyDigestEmail } from "@/lib/emailDigest";
-import { Document, UpdateOneModel } from "mongodb";
+// mongodb types removed — inferred from bulkWrite call
 
 // simple masking helper so errors don't contain full addresses
 function maskEmail(email: string) {
@@ -213,7 +213,7 @@ export const cacheWatchlistPrices = inngest.createFunction(
       const ttlSeconds = 10 * 60; // 10 minutes
       const expireAt = new Date(now.getTime() + ttlSeconds * 1000);
 
-      const bulkOps: UpdateOneModel<Document>[] = [];
+      const bulkOps: any[] = [];
       for (const [coinId, price] of priceMap.entries()) {
         bulkOps.push({
           updateOne: {
