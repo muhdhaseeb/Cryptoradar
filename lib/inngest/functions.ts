@@ -8,6 +8,16 @@ import { sendAlertEmail } from "@/lib/email";
 import { sendDailyDigestEmail } from "@/lib/emailDigest";
 import { Document, UpdateOneModel } from "mongodb";
 
+// simple masking helper so errors don't contain full addresses
+function maskEmail(email: string) {
+  try {
+    const crypto = require("crypto");
+    return crypto.createHash("sha256").update(email).digest("hex").slice(0, 8);
+  } catch {
+    return email.replace(/(.).+(@.+)/, "$1***$2");
+  }
+}
+
 // ─── Job 1: Check Price Alerts every 5 minutes ───────────────────────────────
 export const checkPriceAlerts = inngest.createFunction(
   { id: "check-price-alerts", name: "Check Price Alerts" },
@@ -53,26 +63,29 @@ export const checkPriceAlerts = inngest.createFunction(
         );
         if (!claimed) continue;
 
+        const user = usersMap.get(alert.userId);
+        if (!user?.email) {
+          console.error(`No email found for userId: ${alert.userId}`);
+          // revert claim so alert can be retried later
+          await Alert.findByIdAndUpdate(alert._id, { isActive: true, triggeredAt: null });
+          continue;
+        }
+
         try {
-          const user = usersMap.get(alert.userId);
-          if (user?.email) {
-            await sendAlertEmail({
-              to: user.email,
-              coinId: alert.coinId,
-              coinName: alert.coinName,
-              coinSymbol: alert.coinSymbol,
-              condition: alert.condition,
-              targetPrice: alert.targetPrice,
-              currentPrice,
-            });
-            // only count as triggered when email goes out successfully
-            triggered++;
-          } else {
-            console.error(`No email found for userId: ${alert.userId}`);
-            // do not increment triggered in this branch
-          }
+          await sendAlertEmail({
+            to: user.email,
+            coinId: alert.coinId,
+            coinName: alert.coinName,
+            coinSymbol: alert.coinSymbol,
+            condition: alert.condition,
+            targetPrice: alert.targetPrice,
+            currentPrice,
+          });
+          triggered++;
         } catch (err) {
           console.error("Error processing alert", alert._id, err);
+          // revert claim on failure
+          await Alert.findByIdAndUpdate(alert._id, { isActive: true, triggeredAt: null });
         }
       }
     }
@@ -131,7 +144,8 @@ export const sendDailyDigest = inngest.createFunction(
           await sendWithRetries(user.email);
           sent++;
         } catch (err) {
-          console.error("Error sending digest to", user.email, err);
+          const toId = user?.email ? maskEmail(user.email) : "<no-email>";
+          console.error("Error sending digest to", { toId, error: err });
         }
         // small intra-batch pause to avoid throttle
         await new Promise((r) => setTimeout(r, 50));
@@ -216,12 +230,15 @@ export const cacheWatchlistPrices = inngest.createFunction(
         });
       }
       if (bulkOps.length) {
-        await cacheCol.bulkWrite(bulkOps, { ordered: false });
-        // avoid recreating the index on every run: only create if missing
+        // ensure unique key index exists before writing, to avoid duplicates
         const existing = await cacheCol.indexes();
+        if (!existing.some((ix) => ix.name === "key_1")) {
+          await cacheCol.createIndex({ key: 1 }, { unique: true });
+        }
         if (!existing.some((ix) => ix.name === "expireAt_1")) {
           await cacheCol.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 });
         }
+        await cacheCol.bulkWrite(bulkOps, { ordered: false });
       }
     } catch (err) {
       console.error("Error caching watchlist prices", {
