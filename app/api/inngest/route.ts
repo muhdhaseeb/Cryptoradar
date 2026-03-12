@@ -1,8 +1,10 @@
 import { serve } from "inngest/next";
 import { inngest } from "@/lib/inngest/client";
-import { checkPriceAlerts } from "@/lib/inngest/functions";
+import { checkPriceAlerts, sendDailyDigest, cacheWatchlistPrices } from "@/lib/inngest/functions";
+
+export const runtime = "nodejs";
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [checkPriceAlerts],
+  functions: [checkPriceAlerts, sendDailyDigest, cacheWatchlistPrices],
 });
