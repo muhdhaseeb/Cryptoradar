@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "inngest-dev": "inngest dev -u http://localhost:3000/api/inngest"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.0.1",
